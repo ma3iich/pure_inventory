@@ -28,6 +28,33 @@ Standalone, ou prêt à l'emploi avec QBCore. Fork d'`ox_inventory` : tous les s
 
 ---
 
+## 🎬 Aperçus
+
+<table>
+  <tr>
+    <th width="33%">🖱️ Glisser-déposer</th>
+    <th width="33%">👕 Cases de vêtements</th>
+    <th width="33%">🍔 Utiliser sur ton perso</th>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/user-attachments/assets/6e9ac890-b6db-4870-b305-758e6a581e72" width="100%" controls muted></video></td>
+    <td><video src="https://github.com/user-attachments/assets/6cd18932-d0d6-4f7c-8e42-12e1e3ea58dd" width="100%" controls muted></video></td>
+    <td><video src="https://github.com/user-attachments/assets/6b5c38c5-7e68-41d4-b09f-20e5dd7282af" width="100%" controls muted></video></td>
+  </tr>
+  <tr>
+    <th>🧍 Perso 3D</th>
+    <th>🔢 Quantité</th>
+    <th>⌨️ Tes propres touches</th>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/user-attachments/assets/8f959996-75ed-436c-80b7-85f4c70e5fc6" width="100%" controls muted></video></td>
+    <td><video src="https://github.com/user-attachments/assets/07240999-15d9-42c6-90ff-a85b6c3d3f21" width="100%" controls muted></video></td>
+    <td><video src="https://github.com/user-attachments/assets/1460e671-0f3c-4d78-81a8-284b044cf568" width="100%" controls muted></video></td>
+  </tr>
+</table>
+
+---
+
 ## ✨ Fonctionnalités
 
 <table>
