@@ -4,7 +4,8 @@
 
 [![English](https://img.shields.io/badge/Language-English-555)](README.md) [![Français](https://img.shields.io/badge/Langue-Fran%C3%A7ais-2ea44f)](README.fr.md)
 
-# Pure Inventory
+<img src="docs/banner.png" alt="Pure Inventory — l'inventaire FiveM avec ton perso en 3D" width="100%">
+<br>
 
 **Un inventaire à cases pour FiveM avec ton personnage en 3D, des cases de vêtements et un rendu réglable dans un seul fichier.**<br>
 Standalone, ou prêt à l'emploi avec QBCore. Fork d'`ox_inventory` : tous les scripts faits pour `ox_inventory` continuent de marcher.

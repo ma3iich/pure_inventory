@@ -4,7 +4,8 @@
 
 [![English](https://img.shields.io/badge/Language-English-2ea44f)](README.md) [![Français](https://img.shields.io/badge/Langue-Fran%C3%A7ais-555)](README.fr.md)
 
-# Pure Inventory
+<img src="docs/banner.png" alt="Pure Inventory — the slot inventory for FiveM with your character in 3D" width="100%">
+<br>
 
 **A slot inventory for FiveM with your character in 3D, clothing slots and a look you set in one file.**<br>
 Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_inventory` script keeps working.
