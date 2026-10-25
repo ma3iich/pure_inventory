@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import useNuiEvent from '../../hooks/useNuiEvent';
-import InventoryControl from './InventoryControl';
+import CenterColumn from '../pure/CenterColumn';
+import { useCloseOnFocusLoss } from '../../hooks/useCloseOnFocusLoss';
 import InventoryHotbar from './InventoryHotbar';
 import { useAppDispatch } from '../../store';
 import { refreshSlots, setAdditionalMetadata, setupInventory } from '../../store/inventory';
@@ -13,6 +14,7 @@ import { closeTooltip } from '../../store/tooltip';
 import InventoryContext from './InventoryContext';
 import { closeContextMenu } from '../../store/contextMenu';
 import Fade from '../utils/transitions/Fade';
+import UsefulControlsButton from '../pure/UsefulControlsButton';
 
 const Inventory: React.FC = () => {
   const [inventoryVisible, setInventoryVisible] = useState(false);
@@ -25,6 +27,7 @@ const Inventory: React.FC = () => {
     dispatch(closeTooltip());
   });
   useExitListener(setInventoryVisible);
+  useCloseOnFocusLoss(inventoryVisible);
 
   useNuiEvent<{
     leftInventory?: InventoryProps;
@@ -44,11 +47,18 @@ const Inventory: React.FC = () => {
     <>
       <Fade in={inventoryVisible}>
         <div className="inventory-wrapper">
-          <LeftInventory />
-          <InventoryControl />
-          <RightInventory />
+          <div className="inv-column inv-column--left">
+            <LeftInventory />
+          </div>
+          <div className="inv-column inv-column--center">
+            <CenterColumn />
+          </div>
+          <div className="inv-column inv-column--right">
+            <RightInventory />
+          </div>
           <Tooltip />
           <InventoryContext />
+          <UsefulControlsButton />
         </div>
       </Fade>
       <InventoryHotbar />

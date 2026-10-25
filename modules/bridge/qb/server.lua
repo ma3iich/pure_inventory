@@ -80,6 +80,40 @@ end
 
 AddEventHandler('QBCore:Server:PlayerLoaded', setupPlayer)
 
+-- Handcuffed / dead players cannot move or use items (checked by the server, not only by the client).
+local restrained = {}
+
+local function isRestrained(metadata)
+    return type(metadata) == 'table' and (metadata.ishandcuffed or metadata.isdead or metadata.inlaststand) and true or false
+end
+
+AddEventHandler('QBCore:Server:OnPlayerUpdated', function(playerId, key, value)
+    if type(source) == 'number' then return end
+
+    if key == 'metadata' then
+        restrained[playerId] = isRestrained(value)
+    elseif key == 'all' then
+        restrained[playerId] = isRestrained(type(value) == 'table' and value.metadata)
+    end
+end)
+
+AddEventHandler('QBCore:Server:OnPlayerUnload', function(playerId) restrained[playerId] = nil end)
+AddEventHandler('playerDropped', function() restrained[source] = nil end)
+
+---@diagnostic disable-next-line: duplicate-set-field
+function server.isPlayerRestrained(playerId)
+    local value = restrained[playerId]
+
+    if value == nil then
+        local player = QBCore and QBCore.Functions.GetPlayer(playerId)
+        if not player then return false end
+        value = isRestrained(player.PlayerData.metadata)
+        restrained[playerId] = value
+    end
+
+    return value
+end
+
 SetTimeout(500, function()
     QBCore = exports['qb-core']:GetCoreObject()
     server.GetPlayerFromId = QBCore.Functions.GetPlayer
@@ -232,10 +266,13 @@ function server.convertInventory(playerId, items)
 end
 
 ---@diagnostic disable-next-line: duplicate-set-field
-function server.isPlayerBoss(playerId)
+function server.isPlayerBoss(playerId, group)
     local Player = QBCore.Functions.GetPlayer(playerId)
+    if not Player or not group then return false end
 
-    return Player.PlayerData.job.isboss or Player.PlayerData.gang.isboss
+    -- boss of THIS group only (being the boss of another job or of a gang is not enough)
+    local job, gang = Player.PlayerData.job, Player.PlayerData.gang
+    return (job.name == group and job.isboss == true) or (gang.name == group and gang.isboss == true)
 end
 
 local function export(exportName, func)

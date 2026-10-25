@@ -135,12 +135,14 @@ local function loadInventoryData(data, player, ignoreSecurityChecks)
                 data.entityId = entity
 			else
 				local vehicles = GetAllVehicles()
+				local wanted = string.strtrim(plate)
 
 				for i = 1, #vehicles do
 					local vehicle = vehicles[i]
 					local _plate = GetVehicleNumberPlateText(vehicle)
 
-					if _plate:find(plate) then
+					-- exact plate (find() also matched "AB 12" inside "XAB 123", and treated the plate as a pattern)
+					if _plate and string.strtrim(_plate) == wanted then
 						entity = vehicle
                         data.entityId = entity
 						data.netid = NetworkGetNetworkIdFromEntity(entity)
@@ -186,7 +188,12 @@ local function loadInventoryData(data, player, ignoreSecurityChecks)
 
 			if stash.owner then
 				if stash.owner == true then
-					owner = data.owner or player?.owner
+					-- a player can only open his own personal stash; another owner needs forceOpenInventory
+					if player and not ignoreSecurityChecks then
+						owner = player.owner
+					else
+						owner = data.owner or player?.owner
+					end
 				else
 					owner = stash.owner
 				end
@@ -367,6 +374,26 @@ local function minimal(inv)
 	return inventory
 end
 
+-- Item notifications ("Added 1x") can be muted for a player while an item only changes place
+-- (e.g. a piece of clothing taken off goes into the inventory).
+local mutedNotifications = {}
+
+local function notifyItem(inv, data)
+	if mutedNotifications[inv.id] then return end
+	TriggerClientEvent('ox_inventory:itemNotify', inv.id, data)
+end
+
+---@param playerId number
+---@param muted boolean
+function Inventory.MuteNotifications(playerId, muted)
+	if type(playerId) ~= 'number' then return end
+	mutedNotifications[playerId] = muted == true or nil
+end
+
+AddEventHandler('playerDropped', function()
+	mutedNotifications[source] = nil
+end)
+
 ---@param inv inventory
 ---@param item table
 ---@param count number
@@ -382,7 +409,7 @@ function Inventory.SetSlot(inv, item, count, metadata, slot)
 	local newWeight = currentSlot and inv.weight - currentSlot.weight or inv.weight
 
 	if currentSlot and newCount < 1 then
-		TriggerClientEvent('ox_inventory:itemNotify', inv.id, { currentSlot, 'ui_removed', currentSlot.count })
+		notifyItem(inv, { currentSlot, 'ui_removed', currentSlot.count })
 		currentSlot = nil
 	else
 		currentSlot = {name = item.name, label = item.label, weight = item.weight, slot = slot, count = newCount, description = item.description, metadata = metadata, stack = item.stack, close = item.close}
@@ -390,7 +417,7 @@ function Inventory.SetSlot(inv, item, count, metadata, slot)
 		currentSlot.weight = slotWeight
 		newWeight += slotWeight
 
-		TriggerClientEvent('ox_inventory:itemNotify', inv.id, { currentSlot, count < 0 and 'ui_removed' or 'ui_added', math.abs(count) })
+		notifyItem(inv, { currentSlot, count < 0 and 'ui_removed' or 'ui_added', math.abs(count) })
 	end
 
 	inv.weight = newWeight
@@ -911,8 +938,14 @@ exports('SwapSlots', Inventory.SwapSlots)
 function Inventory.ContainerWeight(container, metaWeight, playerInventory)
 	playerInventory.weight -= container.weight
 	container.weight = Items(container.name).weight
-	container.weight += metaWeight
-	container.metadata.weight = metaWeight
+
+	-- `weightless` containers: their content does not count in the weight of the player
+	if Items.containers[container.name]?.weightless then
+		container.metadata.weight = nil
+	else
+		container.weight += metaWeight
+		container.metadata.weight = metaWeight
+	end
 	playerInventory.weight += container.weight
 end
 
@@ -978,6 +1011,52 @@ function Inventory.GetSlot(inv, slotId)
 end
 exports('GetSlot', Inventory.GetSlot)
 
+---@return number? toSlot
+local function splitOneFromStack(inv, slot, item, durability)
+	local metadata = table.deepclone(slot.metadata)
+	metadata.durability = durability
+	local toSlot
+
+	for i = 1, inv.slots do
+		local data = inv.items[i]
+
+		if not data then
+			toSlot = toSlot or i
+		elseif data ~= slot and data.name == slot.name and table.matches(data.metadata, metadata) then
+			toSlot = i
+			break
+		end
+	end
+
+	if not toSlot then return end
+
+	inv.weight -= slot.weight
+	slot.count -= 1
+	slot.weight = Inventory.SlotWeight(item, slot)
+	inv.weight += slot.weight
+
+	local target = inv.items[toSlot]
+
+	if target then
+		inv.weight -= target.weight
+		target.count += 1
+	else
+		target = { name = item.name, label = item.label, weight = item.weight, slot = toSlot, count = 1, description = item.description, metadata = metadata, stack = item.stack, close = item.close }
+		inv.items[toSlot] = target
+	end
+
+	target.weight = Inventory.SlotWeight(item, target)
+	inv.weight += target.weight
+	inv.changed = true
+
+	inv:syncSlotsWithClients({
+		{ item = slot, inventory = inv.id },
+		{ item = target, inventory = inv.id }
+	}, true)
+
+	return toSlot
+end
+
 ---@param inv inventory
 ---@param slotId number
 ---@param durability number
@@ -989,11 +1068,30 @@ function Inventory.SetDurability(inv, slotId, durability)
 
 	if not slot then return end
 
-    Items.UpdateDurability(inv, slot, Items(slot.name), durability)
+	local item = Items(slot.name)
+	local newSlot
+
+	-- In a stack, only ONE item wears out: it leaves the stack (joins a stack with the same durability,
+	-- or the first empty slot). Without a free slot the whole stack takes the durability, as before.
+	if slot.count > 1 and slot.metadata.durability ~= durability then
+		if item.decay and durability <= 0 then
+			Inventory.RemoveItem(inv, item, 1, nil, slotId)
+			return
+		end
+
+		newSlot = splitOneFromStack(inv, slot, item, durability)
+	end
+
+	if not newSlot then
+		Items.UpdateDurability(inv, slot, item, durability)
+		newSlot = inv.items[slotId] and slotId or nil
+	end
 
     if inv.player and server.syncInventory then
         server.syncInventory(inv)
     end
+
+	return newSlot
 end
 exports('SetDurability', Inventory.SetDurability)
 
@@ -1347,7 +1445,7 @@ function Inventory.RemoveItem(inv, item, count, metadata, slot, ignoreTotal, str
 		for k, v in pairs(itemSlots) do
 			if removed < total then
 				if v == count then
-					TriggerClientEvent('ox_inventory:itemNotify', inv.id, { inv.items[k], 'ui_removed', v })
+					notifyItem(inv, { inv.items[k], 'ui_removed', v })
 
 					removed = total
 					inv.weight -= inv.items[k].weight
@@ -1359,7 +1457,7 @@ function Inventory.RemoveItem(inv, item, count, metadata, slot, ignoreTotal, str
 					removed = total
 					count = v - count
 				else
-					TriggerClientEvent('ox_inventory:itemNotify', inv.id, { inv.items[k], 'ui_removed', v })
+					notifyItem(inv, { inv.items[k], 'ui_removed', v })
 
 					removed = removed + v
 					count = count - v
@@ -1495,6 +1593,15 @@ Inventory.Drops = {}
 
 ---@param prefix string?
 ---@return string
+-- The instance of a drop comes from the server (routing bucket), not from the client.
+local function getDropInstance(playerId)
+	local instance = Player(playerId).state.instance
+
+	if instance ~= nil and instance ~= 0 and instance == GetPlayerRoutingBucket(playerId) then
+		return instance
+	end
+end
+
 local function generateInvId(prefix)
 	while true do
 		local invId = ('%s-%s'):format(prefix or 'drop', math.random(100000, 999999))
@@ -1541,7 +1648,7 @@ exports('CreateDropFromPlayer', function(playerId)
 	inventory.coords = vec3(coords.x, coords.y, coords.z-0.2)
 	Inventory.Drops[dropId] = {
 		coords = inventory.coords,
-		instance = Player(playerId).state.instance
+		instance = getDropInstance(playerId)
 	}
 
 	Inventory.Clear(playerInventory)
@@ -1551,6 +1658,44 @@ exports('CreateDropFromPlayer', function(playerId)
 end)
 
 local TriggerEventHooks = require 'modules.hooks.server'
+
+-- Anti-spam of piles on the ground (each pile is an inventory sent to every player).
+local DROP_DELAY = 1000
+local DROP_MAX = 50
+local playerDrops = {}
+
+local function reserveDrop(source, playerInventory)
+	local key = playerInventory.owner or source
+	local entry = playerDrops[key]
+
+	if not entry then
+		entry = { last = 0, drops = {} }
+		playerDrops[key] = entry
+	end
+
+	local now = GetGameTimer()
+
+	if now - entry.last < DROP_DELAY then
+		return nil, 'cannot_perform'
+	end
+
+	local count = 0
+
+	for dropId, drop in pairs(entry.drops) do
+		if Inventory.Drops[dropId] == drop then
+			count += 1
+		else
+			entry.drops[dropId] = nil
+		end
+	end
+
+	if count >= DROP_MAX then
+		return nil, 'cannot_perform'
+	end
+
+	entry.last = now
+	return entry
+end
 
 ---@class SwapSlotData
 ---@field count number
@@ -1567,6 +1712,20 @@ local TriggerEventHooks = require 'modules.hooks.server'
 ---@param data SwapSlotData
 local function dropItem(source, playerInventory, fromData, data)
     if not fromData then return end
+
+    local dropEntry, refusal = reserveDrop(source, playerInventory)
+    if not dropEntry then return false, refusal end
+
+    -- the pile is put where the player stands, not at any position sent by the client
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then return end
+
+    local pos = GetEntityCoords(ped)
+    local c = data.coords
+
+    if type(c) ~= 'vector3' or #(c.xy - pos.xy) > 5.0 or c.z > pos.z + 3.0 or c.z < pos.z - 200.0 then
+        data.coords = pos
+    end
 
 	local toData = table.clone(fromData)
 	toData.slot = data.toSlot
@@ -1612,7 +1771,8 @@ local function dropItem(source, playerInventory, fromData, data)
 	if not inventory then return end
 
 	inventory.coords = data.coords
-	Inventory.Drops[dropId] = {coords = inventory.coords, instance = data.instance}
+	Inventory.Drops[dropId] = {coords = inventory.coords, instance = getDropInstance(source)}
+	dropEntry.drops[dropId] = Inventory.Drops[dropId]
 	playerInventory.changed = true
 
 	TriggerClientEvent('ox_inventory:createDrop', -1, dropId, Inventory.Drops[dropId], playerInventory.open and source, slot)
@@ -1636,14 +1796,82 @@ end
 
 local activeSlots = {}
 
+-- Checks, on every move, that the player may still use the other inventory he opened
+-- (distance, plate and lock of the vehicle, police / steal rights for another player...).
+local function hasOpenAccess(source, playerInventory, inv)
+	local access = playerInventory.openAccess
+	if not access or access.id ~= inv.id then return false end
+	if access.forced and not access.near then return true end
+
+	local ped = GetPlayerPed(source)
+	if ped == 0 then return false end
+
+	local coords = GetEntityCoords(ped)
+
+	if inv.player then
+		if not access.forced and not server.hasGroup(playerInventory, shared.police) and not Player(inv.id).state.canSteal then
+			return false
+		end
+
+		local targetPed = GetPlayerPed(inv.id)
+		return targetPed ~= 0 and #(coords - GetEntityCoords(targetPed)) <= 10.0
+	end
+
+	if inv.type == 'trunk' or inv.type == 'glovebox' then
+		local entity = access.entity
+
+		if access.forced and not entity then return true end
+		if not entity or entity == 0 or not DoesEntityExist(entity) or GetEntityType(entity) ~= 2 then return false end
+		if string.strtrim(GetVehicleNumberPlateText(entity) or '') ~= string.strtrim(inv.id:sub(6)) then return false end
+		if #(coords - GetEntityCoords(entity)) > 16.0 then return false end
+
+		if inv.type == 'glovebox' then
+			return access.forced or GetVehiclePedIsIn(ped, false) == entity
+		end
+
+		local lockStatus = GetVehicleDoorLockStatus(entity)
+		return access.forced or lockStatus <= 1 or lockStatus == 8
+	end
+
+	local stashCoords = inv.coords
+
+	if stashCoords and not access.forced then
+		local maxDistance = (inv.distance or 10) + 5.0
+
+		if type(stashCoords) == 'table' then
+			for i = 1, #stashCoords do
+				if #(coords - stashCoords[i]) <= maxDistance then return true end
+			end
+
+			return false
+		end
+
+		return #(coords - stashCoords) <= maxDistance
+	end
+
+	return true
+end
+
 ---@param source number
 ---@param data SwapSlotData
 lib.callback.register('ox_inventory:swapItems', function(source, data)
-	if data.count < 1 then return end
+	if type(data) ~= 'table' then return end
+
+	data.count = math.tointeger(data.count)
+	data.fromSlot = math.tointeger(data.fromSlot)
+	data.toSlot = math.tointeger(data.toSlot)
+
+	if not data.count or not data.fromSlot or not data.toSlot then return end
+	if data.count < 1 or data.fromSlot < 1 or data.toSlot < 1 then return end
 
 	local playerInventory = Inventory(source)
 
 	if not playerInventory then return end
+
+	if server.isPlayerRestrained(source) then
+		playerInventory:closeInventory()
+		return false, 'cannot_perform'
+	end
 
 	local toInventory = (data.toType == 'player' and playerInventory) or Inventory(playerInventory.open)
 	local fromInventory = (data.fromType == 'player' and playerInventory) or Inventory(playerInventory.open)
@@ -1653,7 +1881,15 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 		return
 	end
 
+    if data.toSlot > (data.toType == 'newdrop' and shared.dropslots or toInventory.slots or 0) then return end
     if data.toType == 'inspect' or data.fromType == 'inspect' then return end
+
+	local otherInventory = (fromInventory ~= playerInventory and fromInventory) or (toInventory ~= playerInventory and toInventory)
+
+	if otherInventory and otherInventory.type ~= 'container' and not hasOpenAccess(source, playerInventory, otherInventory) then
+		playerInventory:closeInventory()
+		return false
+	end
 
 	local fromRef = ('%s:%s'):format(fromInventory.id, data.fromSlot)
 	local toRef = ('%s:%s'):format(toInventory.id, data.toSlot)
@@ -1713,18 +1949,30 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
         end
 
         if data.toType == 'newdrop' then
+            if fromInventory ~= playerInventory then return false end
             return dropItem(source, playerInventory, fromData, data)
         end
 
 		if fromData then
-            if fromData.metadata.container and toInventory.type == 'container' then return false end
-            if toData and toData.metadata.container and fromInventory.type == 'container' then return false end
+            -- containers cannot go in containers, unless the container is `nestable` (e.g. a phone with a SIM card)
+            if fromData.metadata.container and toInventory.type == 'container' and not Items.containers[fromData.name]?.nestable then return false end
+            if toData and toData.metadata.container and fromInventory.type == 'container' and not Items.containers[toData.name]?.nestable then return false end
 
 			local container, containerItem = (not sameInventory and playerInventory.containerSlot) and (fromInventory.type == 'container' and fromInventory or toInventory)
 
 			if container then
 				containerItem = playerInventory.items[playerInventory.containerSlot]
+
+				-- the container must still be in the player's pockets
+				if not containerItem or containerItem.metadata.container ~= container.id then
+					playerInventory:closeInventory()
+					return false
+				end
 			end
+
+			-- items taken out of a container in the pockets do not change the player's weight, unless it is weightless
+			local ignoreToWeight = fromInventory.type == 'container' and containerItem ~= nil
+				and not Items.containers[containerItem.name]?.weightless
 
 			local hookPayload = {
 				source = source,
@@ -1789,7 +2037,7 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 				local toSlotWeight = Inventory.SlotWeight(Items(toData.name), toData)
 				local totalWeight = toInventory.weight - toData.weight + toSlotWeight
 
-				if fromInventory.type == 'container' or sameInventory or totalWeight <= toInventory.maxWeight then
+				if ignoreToWeight or sameInventory or totalWeight <= toInventory.maxWeight then
 					hookPayload.action = 'stack'
 
 					if not TriggerEventHooks('swapItems', hookPayload) then
@@ -1833,7 +2081,7 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 				toData.slot = data.toSlot
 				toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
 
-				if fromInventory.type == 'container' or sameInventory or (toInventory.weight + toData.weight <= toInventory.maxWeight) then
+				if ignoreToWeight or sameInventory or (toInventory.weight + toData.weight <= toInventory.maxWeight) then
 					hookPayload.action = 'move'
 
 					if not TriggerEventHooks('swapItems', hookPayload) then return end
@@ -2426,12 +2674,16 @@ RegisterServerEvent('ox_inventory:closeInventory', function()
 end)
 
 local function giveItem(playerId, slot, target, count)
+	if type(target) ~= 'number' then return end
+
 	local fromInventory = Inventory(playerId)
 	local toInventory = Inventory(target)
 
 	if not fromInventory or not toInventory then return end
+	if server.isPlayerRestrained(playerId) then return { 'cannot_perform' } end
 
-	if type(count) ~= 'number' or count <= 0 then count = 1 end
+	count = type(count) == 'number' and math.tointeger(count) or nil
+	if not count or count <= 0 then count = 1 end
 
 	if toInventory.player then
 		local data = fromInventory.items[slot]
@@ -2446,7 +2698,10 @@ local function giveItem(playerId, slot, target, count)
 
 		local item = Items(data.name)
 
-		if not item or data.count < count or not Inventory.CanCarryItem(toInventory, item, count, data.metadata) or #(GetEntityCoords(fromInventory.player.ped) - GetEntityCoords(toInventory.player.ped)) > 15 then
+		-- current peds (the stored ped can be outdated after a model change)
+		local fromPed, toPed = GetPlayerPed(playerId), GetPlayerPed(target)
+
+		if not item or data.count < count or not Inventory.CanCarryItem(toInventory, item, count, data.metadata) or fromPed == 0 or toPed == 0 or #(GetEntityCoords(fromPed) - GetEntityCoords(toPed)) > 15 then
 			return { 'cannot_give', count, data.label }
 		end
 
@@ -2542,7 +2797,10 @@ local function updateWeapon(source, action, value, slot, specialAmmo)
 				return
 			end
 
-			if action == 'load' and weapon.metadata.durability > 0 then
+			if action == 'load' and (weapon.metadata.durability or 0) > 0 then
+				value = math.tointeger(value)
+				if not value or value <= (weapon.metadata.ammo or 0) then return end
+
 				local ammo = Items(weapon.name).ammoname
 				local diff = value - (weapon.metadata.ammo or 0)
 
@@ -2562,22 +2820,28 @@ local function updateWeapon(source, action, value, slot, specialAmmo)
 				elseif type == 'string' then
 					local component = inventory.items[tonumber(value)]
 
-					if not Inventory.RemoveItem(inventory, component.name, 1) then return false end
+					-- must be an attachment, taken from that exact slot
+					if not component or not Items(component.name)?.component then return false end
+					if not Inventory.RemoveItem(inventory, component.name, 1, nil, component.slot) then return false end
 
 					table.insert(weapon.metadata.components, component.name)
 					weapon.weight = Inventory.SlotWeight(item, weapon)
 				end
 			elseif action == 'ammo' then
+				if not math.type(value) or value ~= value or value < 0 or value == math.huge then return end
+
 				if item.hash == `WEAPON_FIREEXTINGUISHER` or item.hash == `WEAPON_PETROLCAN` or item.hash == `WEAPON_HAZARDCAN` or item.hash == `WEAPON_FERTILIZERCAN` then
+					-- a can can only be emptied, not refilled by the client
+					if math.floor(value) > math.max(weapon.metadata.ammo or 0, weapon.metadata.durability or 0) then return end
 					weapon.metadata.durability = math.floor(value)
 					weapon.metadata.ammo = weapon.metadata.durability
-				elseif value < weapon.metadata.ammo then
+				elseif math.tointeger(value) and value < (weapon.metadata.ammo or 0) then
 					local durability = Items(weapon.name).durability * math.abs((weapon.metadata.ammo or 0.1) - value)
 					weapon.metadata.ammo = value
 					weapon.metadata.durability = weapon.metadata.durability - durability
 					weapon.weight = Inventory.SlotWeight(item, weapon)
 				end
-			elseif action == 'melee' and value > 0 then
+			elseif action == 'melee' and type(value) == 'number' and value > 0 and weapon.metadata.durability then
 				weapon.metadata.durability = weapon.metadata.durability - ((Items(weapon.name).durability or 1) * value)
 			end
 

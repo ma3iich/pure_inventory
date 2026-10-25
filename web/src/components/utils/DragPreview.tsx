@@ -3,7 +3,7 @@ import { DragLayerMonitor, useDragLayer, XYCoord } from 'react-dnd';
 import { DragSource } from '../../typings';
 
 interface DragLayerProps {
-  data: DragSource;
+  data: DragSource & { image?: string };
   currentOffset: XYCoord | null;
   isDragging: boolean;
 }
@@ -50,7 +50,7 @@ const DragPreview: React.FC = () => {
 
   return (
     <>
-      {isDragging && currentOffset && data.item && (
+      {isDragging && currentOffset && data && (data.item || data.image) && (
         <div
           className="item-drag-preview"
           ref={element}

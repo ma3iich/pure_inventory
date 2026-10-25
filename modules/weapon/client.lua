@@ -51,8 +51,10 @@ function Weapon.Equip(item, data, noWeaponAnim)
 
 	if item.metadata.components then
 		for i = 1, #item.metadata.components do
-			local components = Items[item.metadata.components[i]].client.component
-			for v=1, #components do
+			-- attachments without a GTA component (or removed from the config) are skipped instead of throwing an error
+			local componentItem = Items[item.metadata.components[i]]
+			local components = componentItem and componentItem.client and componentItem.client.component
+			for v=1, type(components) == 'table' and #components or 0 do
 				local component = components[v]
 				if DoesWeaponTakeWeaponComponent(data.hash, component) then
 					if not HasPedGotWeaponComponent(playerPed, data.hash, component) then

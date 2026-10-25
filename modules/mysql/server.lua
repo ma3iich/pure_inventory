@@ -42,6 +42,37 @@ Citizen.CreateThreadNow(function()
         playerColumn = 'citizenid'
         vehicleTable = 'player_vehicles'
         vehicleColumn = 'plate'
+    elseif shared.framework == 'standalone' then
+        playerTable = 'pure_inventory_players'
+        playerColumn = 'identifier'
+        vehicleTable = 'pure_inventory_vehicles'
+        vehicleColumn = 'plate'
+
+        -- Without a framework the rows may not exist yet: saving inserts them.
+        Query.UPDATE_PLAYER = 'INSERT INTO `{user_table}` (inventory, `{user_column}`) VALUES (?, ?) ON DUPLICATE KEY UPDATE inventory = VALUES(inventory)'
+        Query.UPDATE_TRUNK = 'INSERT INTO `{vehicle_table}` (trunk, `{vehicle_column}`) VALUES (?, ?) ON DUPLICATE KEY UPDATE trunk = VALUES(trunk)'
+        Query.UPDATE_GLOVEBOX = 'INSERT INTO `{vehicle_table}` (glovebox, `{vehicle_column}`) VALUES (?, ?) ON DUPLICATE KEY UPDATE glovebox = VALUES(glovebox)'
+
+        MySQL.query.await([[CREATE TABLE IF NOT EXISTS `pure_inventory_players` (
+			`identifier` varchar(64) NOT NULL,
+			`inventory` longtext DEFAULT NULL,
+			`lastupdated` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+			PRIMARY KEY (`identifier`)
+		)]])
+
+        MySQL.query.await([[CREATE TABLE IF NOT EXISTS `pure_inventory_vehicles` (
+			`plate` varchar(16) NOT NULL,
+			`trunk` longtext DEFAULT NULL,
+			`glovebox` longtext DEFAULT NULL,
+			`lastupdated` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+			PRIMARY KEY (`plate`)
+		)]])
+
+        local days = math.tointeger(tonumber(shared.standalone.VehicleStorageDays))
+
+        if days and days > 0 then
+            pcall(MySQL.query.await, ('DELETE FROM `pure_inventory_vehicles` WHERE lastupdated < (NOW() - INTERVAL %d DAY)'):format(days))
+        end
     else
         return
     end
@@ -118,7 +149,7 @@ Citizen.CreateThreadNow(function()
         MySQL.query(('ALTER TABLE `%s` ADD COLUMN `inventory` LONGTEXT NULL'):format(playerTable))
     end
 
-    local clearStashes = GetConvar('inventory:clearstashes', '6 MONTH')
+    local clearStashes = server.clearstashes or ''
 
     if clearStashes ~= '' then
         pcall(MySQL.query.await, ('DELETE FROM ox_inventory WHERE lastupdated < (NOW() - INTERVAL %s)'):format(clearStashes))

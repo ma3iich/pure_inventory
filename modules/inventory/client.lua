@@ -2,7 +2,7 @@ if not lib then return end
 
 local Inventory = {}
 
-Inventory.Dumpsters = lib.array:new(218085040, 666561306, -58485588, -206690185, 1511880420, 682791951)
+Inventory.Dumpsters = lib.array:new(table.unpack(lib.load('data.dumpsters')))
 
 if shared.networkdumpsters then
     -- Make sure dumpsters are frozen to ensure persistent position across clients

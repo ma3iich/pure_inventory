@@ -4,9 +4,11 @@ require 'modules.bridge.server'
 require 'modules.crafting.server'
 require 'modules.shops.server'
 require 'modules.pefcl.server'
+require 'modules.clothing.server'
+require 'modules.rename.server'
 
-if GetConvar('inventory:versioncheck', 'true') == 'true' then
-	lib.versionCheck('TheOrderFivem/ox_inventory')
+if server.versioncheck then
+	lib.versionCheck('ma3iich/pure_inventory')
 end
 
 local TriggerEventHooks = require 'modules.hooks.server'
@@ -69,6 +71,30 @@ AddEventHandler('ox_inventory:setPlayerInventory', server.setPlayerInventory)
 
 local registeredDumpsters = {}
 
+local dumpsterModels = {}
+
+for _, model in ipairs(lib.load('data.dumpsters') or {}) do
+	dumpsterModels[(type(model) == 'string' and joaat(model) or model) % 4294967296] = true
+end
+
+local evidencePoints = lib.load('data.evidence') or {}
+
+---@param playerPed number
+---@return boolean
+local function isNearEvidence(playerPed)
+	local playerCoords = GetEntityCoords(playerPed)
+
+	for _, point in pairs(evidencePoints) do
+		local coords = point.coords or (point.target and point.target.loc)
+
+		if coords and #(vec3(coords.x, coords.y, coords.z) - playerCoords) < 5 then
+			return true
+		end
+	end
+
+	return false
+end
+
 ---@param coords vector3
 ---@return string?
 local function getDumpsterFromCoords(coords)
@@ -125,11 +151,14 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
     if not left then return end
 
     left:closeInventory(true)
-	Inventory.CloseAll(left, source)
 
     if invType == 'player' and data == source then
         data = nil
     end
+
+    -- Only close the other viewers when a second inventory is opened: a player opening his own
+    -- inventory must not close the inventory of the player who is searching him.
+    if data ~= nil then Inventory.CloseAll(left, source) end
 
     local playerPed = left.player.ped
 
@@ -141,11 +170,15 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
 			if right == false then return false end
 		elseif isDataTable then
 			if data.netid then
+                if not ignoreSecurityChecks and invType ~= 'trunk' and invType ~= 'glovebox' then return end
+                if not math.tointeger(data.netid) then return end
+
                 local entity = NetworkGetEntityFromNetworkId(data.netid)
 
-                if not entity then return end
+                if not entity or entity == 0 then return end
 
                 if not ignoreSecurityChecks then
+                    if GetEntityType(entity) ~= 2 then return end
                     if #(GetEntityCoords(playerPed) - GetEntityCoords(entity)) > 16 then return end
                 end
 
@@ -169,7 +202,8 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
                 if plate then
                     if server.trimplate then plate = string.strtrim(plate) end
 
-                    if not data.id  then
+                    -- the client cannot choose another inventory id than the plate of the vehicle
+                    if not data.id or not ignoreSecurityChecks then
                         data.id = (invType == 'glovebox' and 'glove' or 'trunk') .. plate
                     end
                 end
@@ -180,7 +214,7 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
 				if right and data.netid ~= right.netid then
 					local invEntity = NetworkGetEntityFromNetworkId(right.netid)
 
-					if not (invEntity > 0 and DoesEntityExist(invEntity)) or (plate and not string.match(GetVehicleNumberPlateText(invEntity) or '', plate)) then
+					if not (invEntity > 0 and DoesEntityExist(invEntity)) or (plate and string.strtrim(GetVehicleNumberPlateText(invEntity) or '') ~= string.strtrim(plate)) then
 						Inventory.Remove(right)
 						right = Inventory(data)
 					end
@@ -191,8 +225,14 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
 				return
 			end
 		elseif invType == 'policeevidence' then
-			if ignoreSecurityChecks or server.hasGroup(left, shared.police) then
+			if ignoreSecurityChecks then
 				right = Inventory(('evidence-%s'):format(data))
+			else
+				local locker = math.tointeger(tonumber(data))
+
+				if locker and locker >= 1 and locker <= 999 and server.hasGroup(left, shared.police) and isNearEvidence(playerPed) then
+					right = Inventory(('evidence-%s'):format(locker))
+				end
 			end
 		elseif invType == 'dumpster' then
 			if shared.networkdumpsters then
@@ -206,26 +246,51 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
 				end
 			else
 				---@cast data string
-				right = Inventory(data)
+				local netid = type(data) == 'string' and math.tointeger(tonumber(data:sub(9)))
+				local entity = netid and NetworkGetEntityFromNetworkId(netid) or 0
 
-				if not right then
-					local netid = tonumber(data:sub(9))
+				-- must be a real dumpster, close to the player
+				if entity > 0 and dumpsterModels[GetEntityModel(entity) % 4294967296]
+					and (ignoreSecurityChecks or #(GetEntityCoords(playerPed) - GetEntityCoords(entity)) <= 5.0) then
+					right = Inventory(data)
 
-					if netid and NetworkGetEntityFromNetworkId(netid) > 0 then
+					if not right then
 						right = Inventory.Create(data, locale('dumpster'), invType, 15, 0, 100000, false)
 					end
 				end
 			end
+		elseif invType == 'container' and ignoreSecurityChecks and type(data) == 'string' then
+			-- forceOpenInventory(playerId, 'container', containerId): open a container that is not in the player's pockets
+			right = Inventory(data)
+			if right and right.type ~= 'container' then right = nil end
 		elseif invType == 'container' then
 			left.containerSlot = data --[[@as number]]
 			data = left.items[data]
 
 			if data then
-				right = Inventory(data.metadata.container)
+				local container = Items.containers[data.name]
 
-				if not right then
-					right = Inventory.Create(data.metadata.container, data.label, invType, data.metadata.size[1], 0, data.metadata.size[2], false)
+				-- a pile of empty stackable containers cannot be opened (they would share one content)
+				if container?.stackableEmpty and not data.metadata.container and (data.count or 1) > 1 then
+					left.containerSlot = nil
+					return
 				end
+
+				if container and not data.metadata.container then
+					data.metadata.container = Items.GenerateContainerId()
+					data.metadata.size = container.size
+					left.changed = true
+				end
+
+				if data.metadata.container then
+					right = Inventory(data.metadata.container)
+
+					if not right then
+						right = Inventory.Create(data.metadata.container, data.label, invType, data.metadata.size[1], 0, data.metadata.size[2], false)
+					end
+				end
+
+				if not right then left.containerSlot = nil end
 			else left.containerSlot = nil end
 		else right = Inventory(data) end
 
@@ -239,6 +304,12 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
         end
 
 		if not ignoreSecurityChecks and right.groups and not server.hasGroup(left, right.groups) then return end
+
+		if not ignoreSecurityChecks and right.type == 'drop' then
+			local drop = Inventory.Drops[right.id]
+			if drop and drop.instance and drop.instance ~= GetPlayerRoutingBucket(source) then return end
+		end
+
 
 		local hookPayload = {
 			source = source,
@@ -264,6 +335,21 @@ local function openInventory(source, invType, data, ignoreSecurityChecks)
 
 			if not closestCoords then return end
 		end
+
+		-- Remembered so that every move (swapItems) can check the player is still allowed to use this inventory.
+		local near
+
+		if ignoreSecurityChecks and right.player then
+			local ped, targetPed = GetPlayerPed(source), GetPlayerPed(right.id)
+			near = ped ~= 0 and targetPed ~= 0 and #(GetEntityCoords(ped) - GetEntityCoords(targetPed)) <= 5.0
+		end
+
+		left.openAccess = {
+			id = right.id,
+			forced = ignoreSecurityChecks or nil,
+			entity = isDataTable and data.netid and NetworkGetEntityFromNetworkId(data.netid) or nil,
+			near = near or nil,
+		}
 
 		left:openInventory(right)
 	else
@@ -294,6 +380,9 @@ end
 ---@param invType string
 ---@param data string|number|table
 lib.callback.register('ox_inventory:openInventory', function(source, invType, data)
+    if server.isPlayerRestrained(source) then return false, false, 'inventory_player_access' end
+    if (invType == 'trunk' or invType == 'glovebox') and (type(data) ~= 'table' or not data.netid) then return end
+
     if invType == 'player' and source ~= data then
         local serverId = type(data) == 'table' and data.id or data
 
@@ -332,6 +421,19 @@ end
 
 exports('forceOpenInventory', server.forceOpenInventory)
 
+-- Loads a container by its id (metadata.container of the item), so another resource can open it
+-- with forceOpenInventory(playerId, 'container', id) even when it is not in the player's pockets.
+exports('LoadContainer', function(id, label, size)
+	if type(id) ~= 'string' then return end
+
+	local inv = Inventory(id)
+	if inv then return inv.type == 'container' and inv.id or nil end
+	if type(size) ~= 'table' or not tonumber(size[1]) or not tonumber(size[2]) then return end
+
+	inv = Inventory.Create(id, label or id, 'container', size[1], 0, size[2], false)
+	return inv and inv.id or nil
+end)
+
 local Licenses = lib.load('data.licenses')
 
 lib.callback.register('ox_inventory:buyLicense', function(source, id)
@@ -344,13 +446,14 @@ lib.callback.register('ox_inventory:buyLicense', function(source, id)
 	return server.buyLicense(inventory, license)
 end)
 
-lib.callback.register('ox_inventory:getItemCount', function(source, item, metadata, target)
-	local inventory = target and Inventory(target) or Inventory(source)
+-- A client can only read its own inventory (another inventory id would leak its content).
+lib.callback.register('ox_inventory:getItemCount', function(source, item, metadata)
+	local inventory = Inventory(source)
 	return (inventory and Inventory.GetItemCount(inventory, item, metadata, true))
 end)
 
-lib.callback.register('ox_inventory:getInventory', function(source, id)
-	local inventory = Inventory(id or source)
+lib.callback.register('ox_inventory:getInventory', function(source)
+	local inventory = Inventory(source)
 	return inventory and {
 		id = inventory.id,
 		label = inventory.label,
@@ -388,6 +491,10 @@ end)
 ---@param metadata { [string]: any }?
 ---@return table | boolean | nil
 lib.callback.register('ox_inventory:useItem', function(source, itemName, slot, metadata, noAnim)
+	if server.isPlayerRestrained(source) then
+		return TriggerClientEvent('ox_lib:notify', source, { type = 'error', description = locale('cannot_perform') })
+	end
+
 	local inventory = Inventory(source)
 
 	if inventory and inventory.player then
@@ -434,7 +541,7 @@ lib.callback.register('ox_inventory:useItem', function(source, itemName, slot, m
 				if inventory.weapon then
 					local weapon = inventory.items[inventory.weapon]
 
-					if weapon and weapon?.metadata.durability > 0 then
+					if weapon and (weapon?.metadata.durability or 0) > 0 then
 						consume = nil
 					end
 				else return false end
@@ -474,6 +581,12 @@ lib.callback.register('ox_inventory:useItem', function(source, itemName, slot, m
 
             ---@type boolean
 			local success = lib.callback.await('ox_inventory:usingItem', source, data, noAnim)
+
+			-- the item may have been moved or dropped during the use animation
+			if success then
+				local current = inventory.items[slot]
+				if not current or current.name ~= data.name then success = false end
+			end
 
 			if item.weapon then
 				inventory.weapon = success and slot or nil
@@ -663,11 +776,25 @@ lib.addCommand('clearevidence', {
 	local inventory = Inventory(source)
 	if not inventory then return end
 
+	local locker = math.tointeger(args.locker)
+	if not locker or locker < 1 or locker > 999 then return end
+
 	local group, grade = server.hasGroup(inventory, shared.police)
 	local hasPermission = group and server.isPlayerBoss(source, group, grade)
 
-	if hasPermission then
-		MySQL.query('DELETE FROM ox_inventory WHERE name = ?', {('evidence-%s'):format(args.locker)})
+	if not hasPermission then
+		return TriggerClientEvent('ox_lib:notify', source, { type = 'error', description = locale('cannot_perform') })
+	end
+
+	-- cleared in memory too: deleting only the database row was undone by the next save
+	local evidence = Inventory(('evidence-%s'):format(locker))
+
+	if evidence then
+		Inventory.CloseAll(evidence)
+		Inventory.Clear(evidence)
+		Inventory.Save(evidence)
+	else
+		MySQL.query('DELETE FROM ox_inventory WHERE name = ?', { ('evidence-%s'):format(locker) })
 	end
 end)
 

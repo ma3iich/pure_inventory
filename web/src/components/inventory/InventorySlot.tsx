@@ -17,6 +17,10 @@ import { openContextMenu } from '../../store/contextMenu';
 import { useMergeRefs } from '@floating-ui/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
+import { fetchNui } from '../../utils/fetchNui';
+import { clearPendingLabel, getPendingLabel, getRenaming, useRenameState } from '../../store/rename';
+import RenameInput from '../pure/RenameInput';
+import type { ClothingDragSource } from '../pure/ClothingTile';
 
 interface SlotProps {
   inventoryId: Inventory['id'];
@@ -33,7 +37,12 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
   const dispatch = useAppDispatch();
   const timerRef = useRef<number | null>(null);
 
+  const renaming = useRenameState();
+  const isRenamed = inventoryType === 'player' && renaming === item.slot;
+
   const canDrag = useCallback(() => {
+    // no drag while the name of this slot is being typed (selecting text with the mouse)
+    if (inventoryType === 'player' && getRenaming() === item.slot) return false;
     return canPurchaseItem(item, { type: inventoryType, groups: inventoryGroups }) && canCraftItem(item, inventoryType);
   }, [item, inventoryType, inventoryGroups]);
 
@@ -59,14 +68,23 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
     [inventoryType, item]
   );
 
-  const [{ isOver }, drop] = useDrop<DragSource, void, { isOver: boolean }>(
+  const [{ isOver }, drop] = useDrop<DragSource | ClothingDragSource, void, { isOver: boolean }>(
     () => ({
-      accept: 'SLOT',
+      accept: ['SLOT', 'CLOTHING'],
       collect: (monitor) => ({
-        isOver: monitor.isOver(),
+        isOver: monitor.isOver() && monitor.canDrop(),
       }),
-      drop: (source) => {
+      drop: (dragged, monitor) => {
         dispatch(closeTooltip());
+
+        // a worn piece of clothing dropped in the player inventory is taken off into this slot
+        if (monitor.getItemType() === 'CLOTHING') {
+          fetchNui('clothingTakeOff', { key: (dragged as ClothingDragSource).clothing, toSlot: item.slot });
+          return;
+        }
+
+        const source = dragged as DragSource;
+
         switch (source.inventory) {
           case InventoryType.SHOP:
             onBuy(source, { inventory: inventoryType, item: { slot: item.slot } });
@@ -79,10 +97,15 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
             break;
         }
       },
-      canDrop: (source) =>
-        (source.item.slot !== item.slot || source.inventory !== inventoryType) &&
+      canDrop: (dragged, monitor) => {
+        if (monitor.getItemType() === 'CLOTHING') return inventoryType === 'player';
+
+        const source = dragged as DragSource;
+
+        return (source.item.slot !== item.slot || source.inventory !== inventoryType) &&
         inventoryType !== InventoryType.SHOP &&
-        inventoryType !== InventoryType.CRAFTING,
+        inventoryType !== InventoryType.CRAFTING;
+      },
     }),
     [inventoryType, item]
   );
@@ -97,6 +120,7 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
 
     if (!itemSlot) return;
 
+    clearPendingLabel(item.slot);
     manager.dispatch({ type: 'dnd-core/END_DRAG' });
   });
 
@@ -176,7 +200,7 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
       ref={refs}
       onContextMenu={handleContext}
       onClick={handleClick}
-      className="inventory-slot"
+      className={`inventory-slot${isOver ? ' is-over' : ''}${isRenamed ? ' is-renaming' : ''}`}
       style={{
         filter:
           !canPurchaseItem(item, { type: inventoryType, groups: inventoryGroups }) || !canCraftItem(item, inventoryType)
@@ -184,7 +208,6 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
             : undefined,
         opacity: isDragging ? 0.4 : 1.0,
         backgroundImage: `url(${item?.name ? getItemUrl(item as SlotWithItem) : 'none'}`,
-        border: isOver ? '1px dashed rgba(255,255,255,0.4)' : '',
       }}
     >
       {isSlotWithItem(item) && (
@@ -275,11 +298,16 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
                 />
               </div>
             )}
-            <div className="inventory-slot-label-box">
-              <div className="inventory-slot-label-text">
-                {item.metadata?.label ? item.metadata.label : Items[item.name]?.label || item.name}
+            {isRenamed ? (
+              <RenameInput slot={item.slot} label={item.metadata?.label ? item.metadata.label : Items[item.name]?.label || item.name} />
+            ) : (
+              <div className="inventory-slot-label-box">
+                <div className="inventory-slot-label-text">
+                  {(inventoryType === 'player' && getPendingLabel(item.slot)) ||
+                    (item.metadata?.label ? item.metadata.label : Items[item.name]?.label || item.name)}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

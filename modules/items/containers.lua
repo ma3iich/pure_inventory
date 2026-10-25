@@ -5,6 +5,9 @@ local containers = {}
 ---@field maxWeight number
 ---@field whitelist? table<string, true> | string[]
 ---@field blacklist? table<string, true> | string[]
+---@field weightless? boolean the content does not count in the weight of the player carrying the container
+---@field nestable? boolean the container can be put in another container (e.g. a phone holding a SIM card)
+---@field stackableEmpty? boolean empty containers stack like a normal item; one becomes a container when opened
 
 local function arrayToSet(tbl)
 	local size = #tbl
@@ -48,6 +51,9 @@ local function setContainerProperties(itemName, properties)
 		size = { properties.slots, properties.maxWeight },
 		blacklist = blacklist,
 		whitelist = whitelist,
+		weightless = properties.weightless or nil,
+		nestable = properties.nestable or nil,
+		stackableEmpty = properties.stackableEmpty or nil,
 	}
 end
 

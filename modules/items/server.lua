@@ -239,6 +239,14 @@ local function GenerateText(num)
 	return str
 end
 
+Items.containerIdPrefix = 'ctn_'
+
+---@param ostime? number
+---@return string
+function Items.GenerateContainerId(ostime)
+	return ('%s%s%s'):format(Items.containerIdPrefix, GenerateText(8), ostime or os.time())
+end
+
 local function GenerateSerial(text)
 	if text and text:len() > 3 then
 		return text
@@ -285,7 +293,9 @@ function Items.Metadata(inv, item, metadata, count)
 
 	if item.weapon then
 		if type(metadata) ~= 'table' then metadata = {} end
-		if not metadata.durability then metadata.durability = 100 end
+		-- throwables (grenades...) stack: they have no durability
+		if not metadata.durability and not item.throwable then metadata.durability = 100 end
+		if item.throwable then metadata.durability = nil end
 		if not metadata.ammo and item.ammoname then metadata.ammo = 0 end
 		if not metadata.components then metadata.components = {} end
 
@@ -301,9 +311,10 @@ function Items.Metadata(inv, item, metadata, count)
 	else
 		local container = Items.containers[item.name]
 
-		if container then
+		-- `stackableEmpty` containers stay a normal stackable item until they are opened for the first time
+		if container and not (container.stackableEmpty and not metadata.container) then
 			count = 1
-			metadata.container = metadata.container or GenerateText(3)..os.time()
+			metadata.container = metadata.container or Items.GenerateContainerId()
 			metadata.size = container.size
 		elseif not next(metadata) then
 			if item.name == 'identification' then
@@ -362,6 +373,17 @@ function Items.CheckMetadata(metadata, item, name, ostime)
 		metadata.container = metadata.bag
 		metadata.size = Items.containers[name]?.size or {5, 1000}
 		metadata.bag = nil
+	end
+
+	local container = Items.containers[name]
+
+	if container and not (container.stackableEmpty and not metadata.container) then
+		metadata.container = metadata.container or Items.GenerateContainerId(ostime)
+		metadata.size = container.size
+
+		if container.weightless then
+			metadata.weight = nil
+		end
 	end
 
 	local durability = metadata.durability

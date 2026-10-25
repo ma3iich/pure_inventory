@@ -204,8 +204,13 @@ return {
 		}
 	},
 
+	-- Pieces of clothing taken off the character (clothing slots of the inventory).
+	-- Name, picture and weight come from the metadata, set by modules/clothing/server.lua.
 	['clothing'] = {
 		label = 'Clothing',
+		weight = 0,
+		stack = false,
+		close = false,
 		consume = 0,
 	},
 

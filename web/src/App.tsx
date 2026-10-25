@@ -11,6 +11,8 @@ import DragPreview from './components/utils/DragPreview';
 import { fetchNui } from './utils/fetchNui';
 import { useDragDropManager } from 'react-dnd';
 import KeyPress from './components/utils/KeyPress';
+import { ClothingSlotConfig, Features, setSettings } from './store/settings';
+import { applyTheme } from './theme';
 
 debugData([
   {
@@ -96,11 +98,16 @@ const App: React.FC = () => {
     items: typeof Items;
     leftInventory: Inventory;
     imagepath: string;
-  }>('init', ({ locale, items, leftInventory, imagepath }) => {
+    theme?: Record<string, unknown>;
+    clothing?: ClothingSlotConfig[];
+    features?: Features;
+  }>('init', ({ locale, items, leftInventory, imagepath, theme, clothing, features }) => {
     for (const name in locale) Locale[name] = locale[name];
     for (const name in items) Items[name] = items[name];
 
     setImagePath(imagepath);
+    applyTheme(theme || {});
+    setSettings({ theme: theme || {}, clothing: Array.isArray(clothing) ? clothing : [], features });
     dispatch(setupInventory({ leftInventory }));
   });
 

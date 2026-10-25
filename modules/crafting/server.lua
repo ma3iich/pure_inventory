@@ -49,7 +49,8 @@ for id, data in pairs(lib.load('data.crafting') or {}) do createCraftingBench(da
 ---@param index number
 ---@return table?
 local function getCraftingGroups(bench, index)
-	return (shared.target and bench.zones) and bench.zones[index].groups or bench.groups
+	local zone = shared.target and bench.zones and bench.zones[index]
+	return zone and zone.groups or bench.groups
 end
 
 ---falls back to player coords if zones and points are both nil
@@ -60,8 +61,12 @@ end
 local function getCraftingCoords(source, bench, index)
 	if not bench.zones and not bench.points then
 		return GetEntityCoords(GetPlayerPed(source))
+	elseif shared.target then
+		-- a wrong index sent by the client returns nil (it used to throw an error)
+		local zone = bench.zones and bench.zones[index]
+		return zone and zone.coords
 	else
-		return shared.target and bench.zones[index].coords or bench.points[index]
+		return bench.points and bench.points[index]
 	end
 end
 
@@ -96,7 +101,7 @@ end)
 
 local TriggerEventHooks = require 'modules.hooks.server'
 
-lib.callback.register('ox_inventory:craftItem', function(source, id, index, recipeId, toSlot)
+local function craftItem(source, id, index, recipeId, toSlot)
 	local left, bench = Inventory(source), CraftingBenches[id]
 
 	if not left then return end
@@ -105,6 +110,7 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 		local groups = getCraftingGroups(bench, index)
 		local coords = getCraftingCoords(source, bench, index)
 
+		if not coords then return end
 		if groups and not server.hasGroup(left, groups) then return end
 		if #(GetEntityCoords(GetPlayerPed(source)) - coords) > 10 then return end
 
@@ -189,6 +195,12 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 				end
 			end
 
+			local names = {}
+
+			for slot in pairs(tbl) do
+				names[slot] = left.items[slot]?.name
+			end
+
 			if not TriggerEventHooks('craftItem', {
 				source = source,
 				benchId = id,
@@ -198,9 +210,25 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 				toSlot = toSlot,
 			}) then return false end
 
+			local start = GetGameTimer()
 			local success = lib.callback.await('ox_inventory:startCrafting', source, id, recipeId)
 
 			if success then
+				-- the client cannot skip the progress bar, walk away during it, or swap the ingredients
+				local duration = recipe.duration or 3000
+
+				if GetGameTimer() - start < duration - 500 then
+					warn(('craftItem refused: player %s finished "%s" in %d ms instead of %d'):format(source, recipe.name, GetGameTimer() - start, duration))
+					return false
+				end
+
+				if #(GetEntityCoords(GetPlayerPed(source)) - coords) > 10 then return false end
+
+				for slot, count in pairs(tbl) do
+					local invSlot = left.items[slot]
+					if not invSlot or invSlot.name ~= names[slot] or (count >= 1 and invSlot.count < count) then return false end
+				end
+
 				for name, needs in pairs(recipe.ingredients) do
 					if Inventory.GetItemCount(left, name) < needs then return end
 				end
@@ -257,4 +285,26 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 			return success
 		end
 	end
+end
+
+-- One craft at a time per player (a second request during the progress bar is refused).
+local crafting = {}
+
+lib.callback.register('ox_inventory:craftItem', function(source, ...)
+	if crafting[source] then return false end
+
+	crafting[source] = true
+	local ok, result, reason = pcall(craftItem, source, ...)
+	crafting[source] = nil
+
+	if not ok then
+		warn(result)
+		return false
+	end
+
+	return result, reason
+end)
+
+AddEventHandler('playerDropped', function()
+	crafting[source] = nil
 end)

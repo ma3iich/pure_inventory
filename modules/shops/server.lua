@@ -199,9 +199,14 @@ lib.callback.register('ox_inventory:buyItem', function(source, data)
 	if data.toType == 'player' then
 		if data.count == nil then data.count = 1 end
 
+		-- values sent by the client: whole numbers in a sane range
+		if math.type(data.count) ~= 'integer' or data.count < 1 or data.count > 10000 then return false end
+		if math.type(data.fromSlot) ~= 'integer' or math.type(data.toSlot) ~= 'integer' then return false end
+
 		local playerInv = Inventory(source)
 
 		if not playerInv or not playerInv.currentShop then return end
+		if data.toSlot < 1 or data.toSlot > playerInv.slots then return false end
 
 		local shopType, shopId = playerInv.currentShop:match('^(.-) (%d-)$')
 
@@ -210,6 +215,12 @@ lib.callback.register('ox_inventory:buyItem', function(source, data)
 		if shopId then shopId = tonumber(shopId) end
 
 		local shop = shopId and Shops[shopType][shopId] or Shops[shopType]
+
+		-- checked again at purchase time: job, and distance to the shop
+		if not shop or not shop.items then return false end
+		if shop.groups and not server.hasGroup(playerInv, shop.groups) then return false end
+		if type(shop.coords) == 'vector3' and #(GetEntityCoords(GetPlayerPed(source)) - shop.coords) > 10 then return false end
+
 		local fromData = shop.items[data.fromSlot]
 		local toData = playerInv.items[data.toSlot]
 

@@ -2,6 +2,7 @@ if not lib then return end
 
 require 'modules.bridge.client'
 require 'modules.interface.client'
+require 'modules.rename.client'
 
 local Utils = require 'modules.utils.client'
 local Weapon = require 'modules.weapon.client'
@@ -43,14 +44,15 @@ plyState:set('invBusy', true, true)
 plyState:set('invHotkeys', false, false)
 plyState:set('canUseWeapons', false, false)
 
-local function canOpenInventory()
+---@param duringProgress? boolean an open inventory stays open during a progress bar
+local function canOpenInventory(duringProgress)
     if not PlayerData.loaded then
         return shared.info('cannot open inventory', '(player inventory has not loaded)')
     end
 
     if IsPauseMenuActive() then return end
 
-    if invBusy or invOpen == nil or (currentWeapon?.timer or 0) > 0 then
+    if (invBusy and not duringProgress) or invOpen == nil or (currentWeapon?.timer or 0) > 0 then
         return shared.info('cannot open inventory', '(is busy)')
     end
 
@@ -67,6 +69,14 @@ end
 
 ---@param ped number
 ---@return boolean
+-- A progress bar (ox_lib, or QBCore's progressbar resource) is running: invBusy is set during it,
+-- it must not close an inventory that is already open (put on clothes, eat... with the inventory open).
+local function progressRunning()
+	if lib.progressActive() then return true end
+
+	return invBusy and GetResourceState('progressbar') == 'started' and exports.progressbar:isDoingSomething() or false
+end
+
 local function canOpenTarget(ped)
 	return IsPedFatallyInjured(ped)
 	or IsEntityPlayingAnim(ped, 'dead', 'dead_a', 3)
@@ -347,6 +357,16 @@ local Items = require 'modules.items.client'
 local usingItem = false
 
 ---@param data { name: string, label: string, count: number, slot: number, metadata: table<string, any>, weight: number }
+-- Loads the animation before the progress bar starts (otherwise the first use plays no animation).
+local function preloadAnim(dict)
+	if type(dict) ~= 'string' or HasAnimDictLoaded(dict) or not DoesAnimDictExist(dict) then return end
+
+	RequestAnimDict(dict)
+	local timeout = GetGameTimer() + 3000
+
+	while not HasAnimDictLoaded(dict) and GetGameTimer() < timeout do Wait(10) end
+end
+
 lib.callback.register('ox_inventory:usingItem', function(data, noAnim)
 	local item = Items[data.name]
 
@@ -376,6 +396,10 @@ lib.callback.register('ox_inventory:usingItem', function(data, noAnim)
 		elseif item.disable.combat == nil then
 			-- Backwards compatibility; you probably don't want people shooting while eating and bandaging anyway
 			item.disable.combat = true
+		end
+
+		if item.usetime and not noAnim and type(item.anim) == 'table' then
+			preloadAnim(item.anim.dict)
 		end
 
 		local success = (not item.usetime or noAnim or lib.progressBar({
@@ -421,6 +445,23 @@ end
 ---@param data table
 ---@param cb fun(response: SlotWithItem | false)?
 ---@param noAnim? boolean
+-- Config.KeepOpenOnUse: the inventory stays open when an item is used, except for weapons and
+-- the items of Config.CloseOnUse / Config.CloseOnUsePatterns (they open another screen).
+local function closesOnUse(data)
+	if not shared.keepopen then return data.close end
+	if data.weapon then return true end
+
+	local name = data.name
+	if type(name) ~= 'string' then return true end
+	if client.closeonuse[name] then return true end
+
+	for _, pattern in ipairs(client.closeonusepatterns) do
+		if name:find(pattern) then return true end
+	end
+
+	return false
+end
+
 local function useItem(data, cb, noAnim)
 	local slotData, result = PlayerData.inventory[data.slot]
 
@@ -438,7 +479,7 @@ local function useItem(data, cb, noAnim)
         DisablePlayerFiring(cache.playerId, true)
     end
 
-    if invOpen and data.close then client.closeInventory() end
+    if invOpen and closesOnUse(data) then client.closeInventory() end
 
     usingItem = true
     ---@type boolean?
@@ -501,7 +542,7 @@ local function useSlot(slot, noAnim)
 		if item.metadata.container then
 			return client.openInventory('container', item.slot)
 		elseif data.client then
-			if invOpen and data.close then client.closeInventory() end
+			if invOpen and closesOnUse(data) then client.closeInventory() end
 
 			if data.export then
 				return data.export(data, {name = item.name, slot = item.slot, metadata = item.metadata})
@@ -529,6 +570,12 @@ local function useSlot(slot, noAnim)
             GiveWeaponToPed(playerPed, data.hash, 0, false, true)
             SetCurrentPedWeapon(playerPed, data.hash, false)
 
+            -- in a vehicle the weapon is only selected when forced in hand
+            if cache.vehicle and data.hash ~= GetSelectedPedWeapon(playerPed) then
+                SetCurrentPedWeapon(playerPed, data.hash, true)
+                Wait(0)
+            end
+
             if data.hash ~= GetSelectedPedWeapon(playerPed) then
                 lib.print.info(('failed to equip %s (cause unknown)'):format(item.name))
                 return lib.notify({ type = 'error', description = locale('cannot_use', data.label) })
@@ -546,7 +593,7 @@ local function useSlot(slot, noAnim)
 			end, noAnim)
 		elseif currentWeapon then
 			if data.ammo then
-				if EnableWeaponWheel or currentWeapon.metadata.durability <= 0 then return end
+				if EnableWeaponWheel or (currentWeapon.metadata.durability or 0) <= 0 then return end
 
 				local clipSize = GetMaxAmmoInClip(playerPed, currentWeapon.hash, true)
 				local currentAmmo = GetAmmoInPedWeapon(playerPed, currentWeapon.hash)
@@ -838,7 +885,7 @@ local function registerCommands()
 			if not currentWeapon or EnableWeaponWheel or not canUseItem(true) then return end
 
 			if currentWeapon.ammo then
-				if currentWeapon.metadata.durability > 0 then
+				if (currentWeapon.metadata.durability or 0) > 0 then
 					local slotId = Inventory.GetSlotIdWithItem(currentWeapon.ammo, { type = currentWeapon.metadata.specialAmmo }, false)
 
 					if slotId then
@@ -1332,7 +1379,15 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 				items = PlayerData.inventory,
 				maxWeight = shared.playerweight,
 			},
-			imagepath = client.imagepath
+			imagepath = client.imagepath,
+			theme = shared.theme,
+			clothing = require('modules.clothing.client').getSlots(),
+			features = {
+				preview = shared.preview.Enabled == true,
+				clothing = shared.clothing.Enabled == true,
+				rename = shared.rename.Enabled == true,
+				renameMax = shared.rename.MaxLength or 32,
+			},
 		}
 	})
 
@@ -1365,7 +1420,7 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 			end
 
 		elseif invOpen == true then
-			if not canOpenInventory() then
+			if not canOpenInventory(progressRunning()) then
 				client.closeInventory()
 			else
 				playerCoords = GetEntityCoords(playerPed)
@@ -1474,7 +1529,7 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 				DisableControlAction(0, 80, true)
 				DisableControlAction(0, 140, true)
 
-				if currentWeapon.metadata.durability <= 0 or not currentWeapon.timer then
+				if (currentWeapon.metadata.durability and currentWeapon.metadata.durability <= 0) or not currentWeapon.timer then
 					DisablePlayerFiring(playerId, true)
 				elseif client.aimedfiring and not currentWeapon.melee and currentWeapon.group ~= `GROUP_PETROLCAN` and not IsPlayerFreeAiming(playerId) then
 					DisablePlayerFiring(playerId, true)
@@ -1546,6 +1601,9 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 
 							while IsPedPlantingBomb(playerPed) do Wait(0) end
 
+							local slotItem = PlayerData.inventory[weapon.slot]
+							local countBefore = slotItem and slotItem.name == weapon.name and slotItem.count or 0
+
 							TriggerServerEvent('ox_inventory:updateWeapon', 'throw', nil, weapon.slot)
 							plyState:set('invBusy', false, true)
 
@@ -1553,6 +1611,24 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 
 							RemoveWeaponFromPed(playerPed, weapon.hash)
 							TriggerEvent('ox_inventory:currentWeapon')
+
+							-- more of them in the slot: the next one is taken in hand (throw several grenades in a row)
+							if countBefore > 1 then
+								local deadline = GetGameTimer() + 3000
+								local item
+
+								repeat
+									Wait(50)
+									item = PlayerData.inventory[weapon.slot]
+								until not item or item.name ~= weapon.name or item.count < countBefore or GetGameTimer() > deadline
+
+								item = PlayerData.inventory[weapon.slot]
+
+								if item and item.name == weapon.name and item.count > 0 and item.count < countBefore
+									and not currentWeapon and not invOpen and not IsPedFatallyInjured(playerPed) and not IsPedCuffed(playerPed) then
+									useSlot(weapon.slot, true)
+								end
+							end
 						end)
 					end
 				elseif currentWeapon.melee and IsControlJustReleased(0, 24) and IsPedPerformingMeleeAction(playerPed) then
@@ -1627,7 +1703,25 @@ RegisterNUICallback('removeComponent', function(data, cb)
 
     if not itemSlot then return end
 
-	for _, component in pairs(Items[data.component].client.component) do
+	local componentData = Items[data.component]
+	local components = componentData and componentData.client and componentData.client.component
+
+	-- attachment without a GTA component (added by another resource): only removed from the item
+	if not components then
+		for k, v in pairs(itemSlot.metadata.components or {}) do
+			if v == data.component then
+				if lib.callback.await('ox_inventory:updateWeapon', false, 'component', k) then
+					TriggerEvent('ox_inventory:updateWeaponComponent', 'removed', nil, data.component)
+				end
+
+				break
+			end
+		end
+
+		return
+	end
+
+	for _, component in pairs(components) do
 		if HasPedGotWeaponComponent(playerPed, currentWeapon.hash, component) then
 			for k, v in pairs(itemSlot.metadata.components) do
 				if v == data.component then
@@ -1770,8 +1864,18 @@ RegisterNUICallback('exit', function(_, cb)
 	cb(1)
 end)
 
+local craftingAnim = {
+	dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@',
+	clip = 'machinic_loop_mechandplayer',
+}
+
 lib.callback.register('ox_inventory:startCrafting', function(id, recipe)
-	recipe = CraftingBenches[id].items[recipe]
+	local bench = CraftingBenches[id]
+	recipe = bench.items[recipe]
+
+	-- a recipe or a bench can have its own animation (`anim = { dict, clip }`)
+	local anim = recipe.anim or bench.anim or craftingAnim
+	if anim.dict then preloadAnim(anim.dict) end
 
 	return lib.progressCircle({
 		label = locale('crafting_item', recipe.metadata?.label or Items[recipe.name].label),
@@ -1781,10 +1885,7 @@ lib.callback.register('ox_inventory:startCrafting', function(id, recipe)
 			move = true,
 			combat = true,
 		},
-		anim = {
-			dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@',
-			clip = 'machinic_loop_mechandplayer',
-		}
+		anim = anim,
 	})
 end)
 
@@ -1917,3 +2018,5 @@ lib.callback.register('ox_inventory:getVehicleData', function(netid)
 		return GetEntityModel(entity), GetVehicleClass(entity)
 	end
 end)
+
+require 'modules.clothing.client'

@@ -50,6 +50,11 @@ function server.buyLicense()
 	warn('Licenses are not supported for the current framework.')
 end
 
+---@diagnostic disable-next-line: duplicate-set-field
+function server.isPlayerRestrained(playerId)
+	return false
+end
+
 local Inventory = require 'modules.inventory.server'
 
 function server.playerDropped(source)

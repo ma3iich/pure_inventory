@@ -1,2 +1,5 @@
 node_modules/
+web/*.tsbuildinfo
 *.log
+.DS_Store
+Thumbs.db

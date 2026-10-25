@@ -6,13 +6,62 @@ local Weapon = require 'modules.weapon.client'
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', client.onLogout)
 
-RegisterNetEvent('QBCore:Player:SetPlayerData', function(data)
-    if source == '' or not PlayerData.loaded then return end
+-- Dead / handcuffed state from the QBCore metadata.
+local function applyState(metadata)
+    if type(metadata) ~= 'table' then return end
 
-    if (data.metadata.isdead or data.metadata.inlaststand) ~= PlayerData.dead then
-        PlayerData.dead = data.metadata.isdead or data.metadata.inlaststand
+    local dead = metadata.isdead or metadata.inlaststand or false
+
+    if dead ~= (PlayerData.dead or false) then
+        PlayerData.dead = dead
         OnPlayerData('dead', PlayerData.dead)
     end
+
+    if metadata.ishandcuffed then
+        LocalPlayer.state:set('invBusy', true, false)
+
+        if not PlayerData.cuffed then
+            PlayerData.cuffed = true
+            TriggerEvent('ox_inventory:disarm', true)
+        end
+    elseif PlayerData.cuffed then
+        PlayerData.cuffed = false
+        LocalPlayer.state:set('invBusy', false, false)
+    end
+end
+
+local function setGroup(field, value)
+    if not value or not value.name or not value.grade then return end
+
+    local groups = PlayerData.groups
+
+    if groups[value.name] == value.grade.level and PlayerData[field] == value.name then return end
+
+    if PlayerData[field] then
+        groups[PlayerData[field]] = nil
+    end
+
+    PlayerData[field] = value.name
+    groups[value.name] = value.grade.level
+    PlayerData.groups = groups
+    OnPlayerData('groups', PlayerData.groups)
+end
+
+-- qb-core 1.3+ only sends SetPlayerData when the character loads; later changes come with OnPlayerUpdated.
+RegisterNetEvent('QBCore:Client:OnPlayerUpdated', function(key, value)
+    if not PlayerData.loaded then return end
+
+    if key == 'job' then
+        setGroup('job', value)
+    elseif key == 'gang' then
+        setGroup('gang', value)
+    elseif key == 'metadata' then
+        applyState(value)
+    end
+end)
+
+RegisterNetEvent('QBCore:Player:SetPlayerData', function(data)
+    if source == '' or not PlayerData.loaded then return end
 
     local groups = PlayerData.groups
 
@@ -21,18 +70,13 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(data)
             [data.job.name] = data.job.grade.level,
             [data.gang.name] = data.gang.grade.level,
         }
+        PlayerData.job = data.job.name
+        PlayerData.gang = data.gang.name
 
         OnPlayerData('groups', PlayerData.groups)
     end
 
-    if data.metadata.ishandcuffed then
-        PlayerData.cuffed = true
-        LocalPlayer.state:set('invBusy', true, false)
-        Weapon.Disarm()
-    elseif PlayerData.cuffed then
-        PlayerData.cuffed = false
-        LocalPlayer.state:set('invBusy', false, false)
-    end
+    applyState(data.metadata)
 end)
 
 ---@diagnostic disable-next-line: duplicate-set-field
