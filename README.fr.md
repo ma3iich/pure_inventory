@@ -175,7 +175,7 @@ Dans <code>Config.Clothing.Slots</code>, mets dans <code>icon</code> un autre no
 </details>
 
 <details><summary><b>Où signaler un bug ?</b></summary>
-Ouvre une <a href="https://github.com/ma3iich/pure_inventory/issues">issue</a> avec la console du serveur et la console F8.
+Viens sur le <a href="https://discord.gg/C4jc8k3dD9">Discord</a> et ouvre un ticket, avec la console du serveur et la console F8.
 </details>
 
 ---
