@@ -197,5 +197,5 @@ The full list of changes is the git history of this repository.
 ## 📜 License
 
 Pure Inventory is a modified version of ox_inventory, released under the **GNU GPL v3** like the original ([LICENSE](LICENSE)).
-Copyright © Overextended and the ox_inventory contributors; modifications © ma3iich.
+Copyright © 2026 ma3iich · based on ox_inventory, copyright © 2023 Overextended and contributors ([NOTICE](NOTICE.md)).
 The interface sources are in `web/src` (`cd web && npm install && npm run build`).

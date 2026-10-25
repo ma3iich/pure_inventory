@@ -1,6 +1,8 @@
 {
   "name": "pure_inventory",
   "version": "1.0.0",
+  "author": "ma3iich",
+  "license": "GPL-3.0-or-later",
   "homepage": "web/build",
   "private": true,
   "dependencies": {
