@@ -1,5 +1,7 @@
 <div align="center">
 
+<sub>🧩 <b>Pure suite</b> &nbsp;·&nbsp; <a href="https://github.com/ma3iich/pure-target">Pure-Target</a> (right-click menu) &nbsp;·&nbsp; <b>Pure Inventory</b> (inventory) &nbsp;—&nbsp; each one works standalone, and they work together</sub>
+
 [![English](https://img.shields.io/badge/Language-English-2ea44f)](README.md) [![Français](https://img.shields.io/badge/Langue-Fran%C3%A7ais-555)](README.fr.md)
 
 # Pure Inventory
@@ -20,7 +22,7 @@ Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_invent
 
 <sub>Fork of <a href="https://github.com/overextended/ox_inventory">ox_inventory</a> by Overextended (QBCore version kept by <a href="https://github.com/TheOrderFivem/ox_inventory">TheOrderFivem</a>) · Made by <a href="https://github.com/ma3iich">ma3iich</a></sub>
 
-<img src="docs/preview.png" alt="Pure Inventory" width="100%">
+<img src="docs/preview.jpg" alt="Pure Inventory" width="100%">
 
 </div>
 
