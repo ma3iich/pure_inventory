@@ -140,7 +140,7 @@ Tout est dans **`config.lua`**, avec un commentaire sur chaque ligne. Les grande
 | Comportement | reste ouvert quand on utilise un objet (et les objets qui le ferment quand même), marcher inventaire ouvert, flou, renommer |
 | Rendu (`Config.Theme`) | couleur **et opacité** des cases, opacité au survol, liseré, taille, espace, colonnes, lignes visibles, coins arrondis, bande du nom, couleur du texte, majuscules, police, couleurs du menu, taille / couleur des icônes / couleurs des cadenas des cases de vêtements |
 | Personnage 3D | position, taille, pose, lumière, zoom |
-| Cases de vêtements | quelles cases, de quel côté, **leur icône** (intégrée ou ton image), poids, valeurs « nu », animations |
+| Cases de vêtements | quelles cases, de quel côté, **leur icône** (intégrée ou ton image), poids, valeurs « nu », animations, images avec Pure Clothing (`Pictures`), partie « Vêtements » du menu radial (`DisableRadialClothing`) |
 | Standalone | identifiant, groupes ACE, durée de conservation des coffres |
 | Avancé | les options d'origine d'ox_inventory |
 
@@ -160,6 +160,7 @@ Objets, magasins, coffres, établis et coffres de véhicules sont dans `data/` e
 - Changer de vêtements dans un magasin de vêtements reprend simplement la main : le magasin décide pour les pièces changées.
 - Seuls les personnages freemode (`mp_m_freemode_01` / `mp_f_freemode_01`) ont des cases de vêtements.
 - Limite de GTA : les gants font partie du composant « bras », dont la forme dépend du haut. Enlever le haut dénude aussi les bras ; ils reviennent avec le haut.
+- Menu radial : sa partie « Vêtements » (enlever / remettre le haut, le pantalon...) déshabille le personnage sans passer par les cases, et le vêtement ne devient jamais un objet. Avec `Config.Clothing.DisableRadialClothing` (par défaut), l'inventaire retire cette partie du menu de `qbx_radialmenu` (Qbox). `qb-radialmenu` ne permet pas de retirer une de ses entrées depuis un autre script : l'inventaire affiche un avertissement dans la console du serveur ; supprime l'entrée `clothesmenu` de `Config.MenuItems` dans `qb-radialmenu/config.lua`.
 
 ---
 
@@ -349,7 +350,7 @@ Everything is in **`config.lua`**, with a comment on each line. The main parts:
 | Behaviour | stays open when an item is used (and which items still close it), walk while open, blur, rename |
 | Look (`Config.Theme`) | slot colour **and opacity**, hover opacity, outline, size, gap, columns, visible rows, rounded corners, label band, text colour, capitals, font, menu colours, clothing slot size / icon colour / lock colours |
 | Character preview | position, size, pose, light, zoom |
-| Clothing slots | which slots, on which side, **their icon** (built-in or your own image), weight, "naked" values, animations |
+| Clothing slots | which slots, on which side, **their icon** (built-in or your own image), weight, "naked" values, animations, pictures with Pure Clothing (`Pictures`), "Clothing" part of the radial menu (`DisableRadialClothing`) |
 | Standalone | identifier, ACE groups, how long trunks are kept |
 | Advanced | the original ox_inventory options |
 
@@ -369,6 +370,7 @@ Items, shops, stashes, crafting benches and vehicle storages are in `data/` exac
 - Changing clothes in a clothing shop simply takes over: the shop decides for the pieces you changed there.
 - Only freemode characters (`mp_m_freemode_01` / `mp_f_freemode_01`) have clothing slots.
 - GTA limit: gloves are part of the "arms" component, whose shape depends on the top. Taking the top off also bares the arms; the arms come back with the top.
+- Radial menu: its "Clothing" part (take off / put back the top, the pants...) undresses the character without the slots, and the piece never becomes an item. With `Config.Clothing.DisableRadialClothing` (default), the inventory removes that part from the menu of `qbx_radialmenu` (Qbox). `qb-radialmenu` gives no way to remove one of its entries from another script: the inventory prints a warning in the server console; delete the `clothesmenu` entry of `Config.MenuItems` in `qb-radialmenu/config.lua`.
 
 ---
 

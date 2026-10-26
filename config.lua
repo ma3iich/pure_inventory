@@ -150,6 +150,7 @@ Config.Clothing = {
     Item = 'clothing',          -- item that holds a piece of clothing (defined in data/items.lua)
     Pictures = true,            -- with pure_clothing: a worn piece shows its picture in its slot (and on its item)
     Animations = true,          -- small animation when a piece is put on / taken off
+    DisableRadialClothing = true, -- remove the "Clothing" part of the radial menu (qbx_radialmenu), which undresses without the slots
 
     -- Slots shown on each side of the character, from top to bottom.
     --   key       : unique name (do not change it once players have clothes)

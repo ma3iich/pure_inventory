@@ -2020,3 +2020,4 @@ lib.callback.register('ox_inventory:getVehicleData', function(netid)
 end)
 
 require 'modules.clothing.client'
+require 'modules.clothing.radial'

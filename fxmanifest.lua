@@ -47,6 +47,7 @@ files {
     'web/images/*.png',
     'modules/**/shared.lua',
     'modules/**/client.lua',
+    'modules/clothing/radial.lua',
     'modules/bridge/**/client.lua',
     'data/*.lua',
 }

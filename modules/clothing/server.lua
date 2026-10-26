@@ -281,3 +281,22 @@ SetInterval(function()
 end, 30 * 60000)
 
 exports('GetClothingItem', function() return Items(itemName) end)
+
+-- qb-radialmenu has a "Clothing" part that undresses the character without the slots (the piece never becomes
+-- an item). Its exports cannot hide one of its built-in entries (RemoveOption only removes entries added with
+-- AddOption), so the server owner has to remove it in its config: warn him (Config.Clothing.DisableRadialClothing).
+-- qbx_radialmenu is handled on the client (modules/clothing/radial.lua).
+local function checkRadialMenu()
+    if settings.DisableRadialClothing == false then return end
+
+    local state = GetResourceState('qb-radialmenu')
+    if state ~= 'started' and state ~= 'starting' then return end
+
+    lib.print.warn("qb-radialmenu is running: its 'Clothing' menu takes clothes off without the clothing slots (the piece never becomes an item). qb-radialmenu has no export to hide that entry: delete the 'clothesmenu' entry of Config.MenuItems in qb-radialmenu/config.lua. Config.Clothing.DisableRadialClothing = false hides this warning.")
+end
+
+SetTimeout(2000, checkRadialMenu)
+
+AddEventHandler('onResourceStart', function(resource)
+    if resource == 'qb-radialmenu' then checkRadialMenu() end
+end)
