@@ -77,6 +77,9 @@ local function readPiece(slot, piece)
 
     local result = { d = d, t = t }
 
+    -- picture of the piece (pure_clothing), only used for the item
+    if type(piece.c) == 'string' and piece.c:match('^[mf]/[cp]%d+/[%w_]+/%d+$') then result.c = piece.c end
+
     -- the arms go with the torso (their shape depends on it)
     if slot.component == 11 and type(piece.arms) == 'table' then
         local ad, at = math.tointeger(piece.arms.d), math.tointeger(piece.arms.t)
@@ -106,10 +109,18 @@ local function tooFast(source)
     lastAction[source] = now
 end
 
+-- With pure_clothing, the item shows the picture of the piece (the same as in its shops).
+local function pictureUrl(piece)
+    if not piece.c or GetResourceState('pure_clothing') ~= 'started' then return end
+    local ok, url = pcall(function() return exports.pure_clothing:PictureUrl(piece.c) end)
+    return ok and url or nil
+end
+
 local function makeMetadata(slot, model, piece)
     return {
         label = locale(('clothing_%s'):format(slot.key)),
         image = ('clothing_%s'):format(slot.key),
+        imageurl = pictureUrl(piece),
         weight = slot.weight or 0,
         clothing = { key = slot.key, model = model, d = piece.d, t = piece.t, arms = piece.arms },
     }

@@ -148,6 +148,7 @@ Config.PedPreview = {
 Config.Clothing = {
     Enabled = true,
     Item = 'clothing',          -- item that holds a piece of clothing (defined in data/items.lua)
+    Pictures = true,            -- with pure_clothing: a worn piece shows its picture in its slot (and on its item)
     Animations = true,          -- small animation when a piece is put on / taken off
 
     -- Slots shown on each side of the character, from top to bottom.

@@ -57,14 +57,31 @@ local function nakedValue(slot)
     return nakedTable()[slot.component] or 0
 end
 
+local collectionsOk = GetPedCollectionNameFromDrawable ~= nil and GetPedCollectionLocalIndexFromDrawable ~= nil
+    and GetPedCollectionNameFromProp ~= nil and GetPedCollectionLocalIndexFromProp ~= nil
+
+-- Key of the picture of a piece, as pure_clothing names them: <m|f>/<c11|p0>/<collection or _base>/<index>
+local function pictureKey(ped, slot, d)
+    if not collectionsOk or d < 0 then return end
+    local isProp = slot.prop ~= nil
+    local id = slot.prop or slot.component
+    local nameOf = isProp and GetPedCollectionNameFromProp or GetPedCollectionNameFromDrawable
+    local localOf = isProp and GetPedCollectionLocalIndexFromProp or GetPedCollectionLocalIndexFromDrawable
+    local collection = string.lower(nameOf(ped, id, d) or '')
+    return ('%s/%s%d/%s/%d'):format(GetEntityModel(ped) == MALE and 'm' or 'f', isProp and 'p' or 'c', id,
+        collection == '' and '_base' or collection, localOf(ped, id, d))
+end
+
 local function read(slot)
     local ped = cache.ped
 
     if slot.prop then
-        return { d = GetPedPropIndex(ped, slot.prop), t = math.max(GetPedPropTextureIndex(ped, slot.prop), 0) }
+        local d = GetPedPropIndex(ped, slot.prop)
+        return { d = d, t = math.max(GetPedPropTextureIndex(ped, slot.prop), 0), c = pictureKey(ped, slot, d) }
     end
 
-    local piece = { d = GetPedDrawableVariation(ped, slot.component), t = GetPedTextureVariation(ped, slot.component) }
+    local d = GetPedDrawableVariation(ped, slot.component)
+    local piece = { d = d, t = GetPedTextureVariation(ped, slot.component), c = pictureKey(ped, slot, d) }
 
     if slot.component == 11 then
         piece.arms = { d = GetPedDrawableVariation(ped, 3), t = GetPedTextureVariation(ped, 3) }
@@ -125,12 +142,22 @@ local function notify(key)
 end
 
 ---State of the slots for the interface: { supported, worn = { [key] = boolean } }
+-- With pure_clothing, a worn piece shows its picture in its slot (the same as in its shops).
+local function picturesOn()
+    return settings.Pictures ~= false and GetResourceState('pure_clothing') == 'started'
+end
+
 function Clothing.getState()
-    local state = { supported = supported(), worn = {} }
+    local state = { supported = supported(), worn = {}, pictures = {} }
 
     if state.supported then
+        local pictures = picturesOn()
         for key, slot in pairs(slots) do
-            state.worn[key] = not isNaked(slot, read(slot))
+            local piece = read(slot)
+            state.worn[key] = not isNaked(slot, piece)
+            if pictures and state.worn[key] and piece.c then
+                state.pictures[key] = ('nui://pure_clothing/web/miniatures/%s.webp'):format(piece.c)
+            end
         end
     end
 

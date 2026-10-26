@@ -22,7 +22,10 @@ const Lock: React.FC<{ locked: boolean }> = ({ locked }) => (
   </svg>
 );
 
-const ClothingTile: React.FC<{ slot: ClothingSlotConfig; worn: boolean }> = ({ slot, worn }) => {
+const ClothingTile: React.FC<{ slot: ClothingSlotConfig; worn: boolean; picture?: string }> = ({ slot, worn, picture }) => {
+  // picture of the worn piece (pure_clothing); back to the icon when it cannot be loaded
+  const [broken, setBroken] = React.useState<string | undefined>();
+  const showPicture = worn && !!picture && broken !== picture;
   // a worn piece can be dragged into the player inventory to take it off
   const [{ isDragging }, drag] = useDrag<ClothingDragSource, void, { isDragging: boolean }>(
     () => ({
@@ -56,7 +59,11 @@ const ClothingTile: React.FC<{ slot: ClothingSlotConfig; worn: boolean }> = ({ s
       data-tip={tip}
       onClick={() => worn && fetchNui('clothingTakeOff', { key: slot.key })}
     >
-      <ClothingIcon icon={slot.icon} className="clothing-tile-icon" />
+      {showPicture ? (
+        <img src={picture} alt="" className="clothing-tile-picture" draggable={false} onError={() => setBroken(picture)} />
+      ) : (
+        <ClothingIcon icon={slot.icon} className="clothing-tile-icon" />
+      )}
       <span className="clothing-tile-lock">
         <Lock locked={worn} />
       </span>

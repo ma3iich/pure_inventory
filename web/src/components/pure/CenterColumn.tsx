@@ -13,13 +13,14 @@ import WeightRing from './WeightRing';
 interface ClothingState {
   supported: boolean;
   worn: Record<string, boolean>;
+  pictures?: Record<string, string>;
 }
 
 // Middle of the inventory: the 3D character (drawn by the game, see modules/preview/client.lua), the clothing
 // slots on each side, and at the bottom the amount and the weight.
 const CenterColumn: React.FC = () => {
   const { features, clothing } = useSettings();
-  const [state, setState] = useState<ClothingState>({ supported: false, worn: {} });
+  const [state, setState] = useState<ClothingState>({ supported: false, worn: {}, pictures: {} });
   const dragging = useRef<{ x: number; total: number; timer: number | null } | null>(null);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ const CenterColumn: React.FC = () => {
 
     if (features.preview || features.clothing) {
       fetchNui<ClothingState>('previewStart')
-        .then((data) => mounted && data && setState({ supported: !!data.supported, worn: data.worn || {} }))
+        .then((data) => mounted && data && setState({ supported: !!data.supported, worn: data.worn || {}, pictures: data.pictures || {} }))
         .catch(() => {});
     }
 
@@ -37,7 +38,7 @@ const CenterColumn: React.FC = () => {
     };
   }, [features.preview, features.clothing]);
 
-  useNuiEvent<ClothingState>('clothingState', (data) => setState({ supported: !!data.supported, worn: data.worn || {} }));
+  useNuiEvent<ClothingState>('clothingState', (data) => setState({ supported: !!data.supported, worn: data.worn || {}, pictures: data.pictures || {} }));
 
   // an item of the player dropped on the character is used (clothes are put on)
   const [{ isOver }, drop] = useDrop<DragSource, void, { isOver: boolean }>(
@@ -120,12 +121,12 @@ const CenterColumn: React.FC = () => {
         <>
           <div className="clothing-column clothing-column--left">
             {left.map((slot) => (
-              <ClothingTile key={slot.key} slot={slot} worn={!!state.worn[slot.key]} />
+              <ClothingTile key={slot.key} slot={slot} worn={!!state.worn[slot.key]} picture={state.pictures?.[slot.key]} />
             ))}
           </div>
           <div className="clothing-column clothing-column--right">
             {right.map((slot) => (
-              <ClothingTile key={slot.key} slot={slot} worn={!!state.worn[slot.key]} />
+              <ClothingTile key={slot.key} slot={slot} worn={!!state.worn[slot.key]} picture={state.pictures?.[slot.key]} />
             ))}
           </div>
         </>
