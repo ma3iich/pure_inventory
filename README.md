@@ -16,8 +16,12 @@ Standalone, ou prêt à l'emploi avec QBCore. Fork d'`ox_inventory` : tous les s
 [![Lua](https://img.shields.io/badge/Lua-5.4-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 [![Standalone](https://img.shields.io/badge/framework-standalone%20%7C%20QBCore-6e7681)](#-installation)
 [![Licence](https://img.shields.io/badge/licence-GPL--3.0-3fb950)](LICENSE)
+[![Téléchargements](https://img.shields.io/github/downloads/ma3iich/pure_inventory/total?label=T%C3%A9l%C3%A9chargements&color=2ea44f)](https://github.com/ma3iich/pure_inventory/releases)
+[![YouTube](https://img.shields.io/badge/YouTube-Tuto%20vid%C3%A9o-red?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=n8H1ayGNnV0)
+[![Discord](https://img.shields.io/badge/Discord-Aide-5865F2?logo=discord&logoColor=white)](https://discord.gg/C4jc8k3dD9)
 
 **[⬇️ Télécharger](https://github.com/ma3iich/pure_inventory/releases/latest)** &nbsp;·&nbsp;
+**[🎬 Tuto vidéo](https://www.youtube.com/watch?v=n8H1ayGNnV0)** &nbsp;·&nbsp;
 **[📦 Installation](#-installation)** &nbsp;·&nbsp;
 **[⚙️ Configuration](#%EF%B8%8F-configuration)** &nbsp;·&nbsp;
 **[🗄️ SQL](sql/README.md)** &nbsp;·&nbsp;
@@ -221,8 +225,12 @@ Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_invent
 [![Lua](https://img.shields.io/badge/Lua-5.4-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 [![Standalone](https://img.shields.io/badge/framework-standalone%20%7C%20QBCore-6e7681)](#-installation-1)
 [![License](https://img.shields.io/badge/license-GPL--3.0-3fb950)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/ma3iich/pure_inventory/total?label=Downloads&color=2ea44f)](https://github.com/ma3iich/pure_inventory/releases)
+[![YouTube](https://img.shields.io/badge/YouTube-Video%20tutorial-red?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=n8H1ayGNnV0)
+[![Discord](https://img.shields.io/badge/Discord-Support-5865F2?logo=discord&logoColor=white)](https://discord.gg/C4jc8k3dD9)
 
 **[⬇️ Download](https://github.com/ma3iich/pure_inventory/releases/latest)** &nbsp;·&nbsp;
+**[🎬 Video tutorial](https://www.youtube.com/watch?v=n8H1ayGNnV0)** &nbsp;·&nbsp;
 **[📦 Installation](#-installation-1)** &nbsp;·&nbsp;
 **[⚙️ Configuration](#%EF%B8%8F-configuration-1)** &nbsp;·&nbsp;
 **[🗄️ SQL](sql/README.md)** &nbsp;·&nbsp;
