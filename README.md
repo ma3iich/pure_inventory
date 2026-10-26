@@ -135,7 +135,7 @@ Tout est dans **`config.lua`**, avec un commentaire sur chaque ligne. Les grande
 
 | Partie | Ce que tu règles |
 | --- | --- |
-| Général | framework (`auto`), langue |
+| Général | framework (`auto`), langue, contrôle des mises à jour (`CheckUpdates`) |
 | Inventaire du joueur | cases, poids, touches, métiers de police |
 | Comportement | reste ouvert quand on utilise un objet (et les objets qui le ferment quand même), marcher inventaire ouvert, flou, renommer |
 | Rendu (`Config.Theme`) | couleur **et opacité** des cases, opacité au survol, liseré, taille, espace, colonnes, lignes visibles, coins arrondis, bande du nom, couleur du texte, majuscules, police, couleurs du menu, taille / couleur des icônes / couleurs des cadenas des cases de vêtements |
@@ -344,7 +344,7 @@ Everything is in **`config.lua`**, with a comment on each line. The main parts:
 
 | Part | What you set |
 | --- | --- |
-| General | framework (`auto`), language |
+| General | framework (`auto`), language, update check (`CheckUpdates`) |
 | Player inventory | slots, weight, keys, police jobs |
 | Behaviour | stays open when an item is used (and which items still close it), walk while open, blur, rename |
 | Look (`Config.Theme`) | slot colour **and opacity**, hover opacity, outline, size, gap, columns, visible rows, rounded corners, label band, text colour, capitals, font, menu colours, clothing slot size / icon colour / lock colours |

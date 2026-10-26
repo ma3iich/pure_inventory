@@ -22,6 +22,10 @@ Config.Framework = 'auto'
 -- (files in locales/). nil = the ox_lib language (setr ox:locale "fr" in server.cfg).
 Config.Locale = nil
 
+-- Update check: at start, the server asks GitHub for the latest release and prints a line in the
+-- server console when a newer version exists. Nothing is downloaded. false = no request to GitHub.
+Config.CheckUpdates = true
+
 ---------------------------------------------------------------------------------------------------
 -- 2. PLAYER INVENTORY
 ---------------------------------------------------------------------------------------------------
@@ -226,6 +230,6 @@ Config.TrimPlate = true
 Config.BulkStashSave = true
 Config.ClearStashes = '6 MONTH'     -- stashes not used for this long are deleted ('' = never)
 Config.LogLevel = 1                 -- 0 none, 1 important, 2 everything
-Config.VersionCheck = true
+Config.VersionCheck = false         -- ox_lib's own update check (same job as Config.CheckUpdates: keep it off)
 Config.Accounts = { 'money' }       -- accounts that exist as items
 Config.ImagePath = nil              -- folder of the item images (nil = this resource's web/images)
