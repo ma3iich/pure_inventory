@@ -184,9 +184,11 @@ Config.Clothing = {
         female = { [1] = 0, [3] = 15, [4] = 15, [5] = 0, [6] = 35, [7] = 0, [8] = 14, [9] = 0, [10] = 0, [11] = 15 },
     },
 
-    -- Time (ms) after the player is loaded before the removed clothes are applied again
-    -- (your appearance script dresses the character first).
-    ApplyDelay = 3000,
+    -- After the player is loaded, the removed clothes are applied again as soon as your appearance script
+    -- dressed the character (checked every 250 ms, up to ApplyTimeout ms), after a first delay of ApplyDelay ms.
+    ApplyDelay = 500,
+    ApplyTimeout = 10000,
+    WatchInterval = 2000,       -- ms between two checks that another script did not dress the character again
 }
 
 ---------------------------------------------------------------------------------------------------

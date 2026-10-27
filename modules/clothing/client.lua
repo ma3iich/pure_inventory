@@ -49,12 +49,12 @@ local function supported()
     return model == MALE or model == FEMALE
 end
 
-local function nakedTable()
-    return (settings.Naked or {})[GetEntityModel(cache.ped) == MALE and 'male' or 'female'] or {}
+local function nakedTable(ped)
+    return (settings.Naked or {})[GetEntityModel(ped or cache.ped) == MALE and 'male' or 'female'] or {}
 end
 
-local function nakedValue(slot)
-    return nakedTable()[slot.component] or 0
+local function nakedValue(slot, ped)
+    return nakedTable(ped)[slot.component] or 0
 end
 
 local collectionsOk = GetPedCollectionNameFromDrawable ~= nil and GetPedCollectionLocalIndexFromDrawable ~= nil
@@ -72,8 +72,8 @@ local function pictureKey(ped, slot, d)
         collection == '' and '_base' or collection, localOf(ped, id, d))
 end
 
-local function read(slot)
-    local ped = cache.ped
+local function read(slot, ped)
+    ped = ped or cache.ped
 
     if slot.prop then
         local d = GetPedPropIndex(ped, slot.prop)
@@ -90,24 +90,24 @@ local function read(slot)
     return piece
 end
 
-local function isNaked(slot, piece)
+local function isNaked(slot, piece, ped)
     if slot.prop then return piece.d < 0 end
-    return piece.d == nakedValue(slot)
+    return piece.d == nakedValue(slot, ped)
 end
 
 ---@param piece table | 'off'
-local function apply(slot, piece)
-    local ped = cache.ped
+local function apply(slot, piece, ped)
+    ped = ped or cache.ped
 
     if piece == 'off' then
         if slot.prop then
             ClearPedProp(ped, slot.prop)
         else
-            SetPedComponentVariation(ped, slot.component, nakedValue(slot), 0, 0)
+            SetPedComponentVariation(ped, slot.component, nakedValue(slot, ped), 0, 0)
 
             -- bare torso = bare arms
             if slot.component == 11 then
-                SetPedComponentVariation(ped, 3, nakedTable()[3] or 15, 0, 0)
+                SetPedComponentVariation(ped, 3, nakedTable(ped)[3] or 15, 0, 0)
             end
         end
     elseif type(piece) == 'table' then
@@ -189,6 +189,8 @@ local function run(action)
 end
 
 ---Takes off the piece of the slot `key`; it goes in the inventory slot `toSlot` (or the first free one).
+local known = {} -- state of the character (what he changed), as the server knows it
+
 function Clothing.takeOff(key, toSlot)
     local slot = slots[key]
     if not slot then return end
@@ -202,6 +204,7 @@ function Clothing.takeOff(key, toSlot)
         local success, err = lib.callback.await('pure_inventory:clothing:takeOff', false, key, toSlot, current)
 
         if success then
+            known[key] = { base = known[key] and known[key].base or { d = current.d, t = current.t }, cur = 'off' }
             apply(slot, 'off')
         else
             notify(err)
@@ -227,9 +230,11 @@ function Clothing.putOn(invSlot, expectedKey)
     run(function()
         playAnim(slot)
 
-        local success, piece = lib.callback.await('pure_inventory:clothing:putOn', false, invSlot, read(slot))
+        local worn = read(slot)
+        local success, piece = lib.callback.await('pure_inventory:clothing:putOn', false, invSlot, worn)
 
         if success then
+            known[slot.key] = { base = known[slot.key] and known[slot.key].base or { d = worn.d, t = worn.t }, cur = piece }
             apply(slot, piece)
         else
             notify(piece)
@@ -239,16 +244,45 @@ end
 
 ---Puts back what the player changed, after the appearance script dressed the character
 ---(connection, respawn, new model). A slot changed somewhere else (clothing shop) is forgotten.
-function Clothing.reconcile()
-    if not PlayerData.loaded or not supported() then return end
+local function matchesPiece(slot, now, target, ped)
+    if target == 'off' then return isNaked(slot, now, ped) end
+    return type(target) == 'table' and now.d == target.d and now.t == target.t
+end
 
-    local state = lib.callback.await('pure_inventory:clothing:getState', false)
-    local forget = {}
+-- Waits (up to ApplyTimeout) until the appearance script dressed the character with the base outfit,
+-- so that the pieces he changed are put back at once, without the old outfit showing for seconds.
+local function waitForBaseOutfit(state)
+    local deadline = GetGameTimer() + (settings.ApplyTimeout or 10000)
+    repeat
+        local ready = true
+        for key, entry in pairs(state or {}) do
+            local slot = slots[key]
+            if slot and type(entry) == 'table' then
+                local now = read(slot)
+                if not matchesPiece(slot, now, entry.cur) and not matchesPiece(slot, now, entry.base) then ready = false end
+            end
+        end
+        if ready then return end
+        Wait(250)
+    until GetGameTimer() > deadline
+end
 
-    for key, entry in pairs(state or {}) do
+---@param fetch boolean? read the state from the server (connection, respawn); otherwise the local copy is used
+function Clothing.reconcile(fetch)
+    if not PlayerData.loaded or not supported() or busy then return end
+
+    if fetch then
+        local state = lib.callback.await('pure_inventory:clothing:getState', false)
+        known = type(state) == 'table' and state or {}
+        waitForBaseOutfit(known)
+    end
+
+    local forget, changed = {}, fetch == true
+
+    for key, entry in pairs(known) do
         local slot = slots[key]
 
-        if slot then
+        if slot and type(entry) == 'table' then
             local now = read(slot)
 
             local function matches(target)
@@ -257,8 +291,17 @@ function Clothing.reconcile()
             end
 
             if not matches(entry.cur) then
-                if matches(entry.base) then
+                if matches(entry.base) or isNaked(slot, now) then
+                    -- another script applied the saved outfit (or undressed): what the character changed is put back
                     apply(slot, entry.cur)
+                    changed = true
+                elseif type(entry.cur) == 'table' then
+                    -- a piece put on from an item, replaced by another script (outfit changer...): it goes back
+                    -- into the inventory, and that script decides for the slot from now on
+                    local success = lib.callback.await('pure_inventory:clothing:takeOff', false, key, nil, entry.cur)
+                    if success then apply(slot, now) end
+                    forget[#forget + 1] = key
+                    changed = true
                 else
                     forget[#forget + 1] = key
                 end
@@ -267,10 +310,11 @@ function Clothing.reconcile()
     end
 
     if #forget > 0 then
+        for _, key in ipairs(forget) do known[key] = nil end
         TriggerServerEvent('pure_inventory:clothing:forget', forget)
     end
 
-    Preview.refresh()
+    if changed then Preview.refresh() end
 end
 
 local readyAt
@@ -281,9 +325,13 @@ CreateThread(function()
 
         Wait(settings.ApplyDelay or 3000)
         readyAt = GetGameTimer()
-        Clothing.reconcile()
+        Clothing.reconcile(true)
 
-        while PlayerData.loaded do Wait(1000) end
+        -- every few seconds: another script (outfit changer, radial menu...) may have dressed the character
+        while PlayerData.loaded do
+            Wait(settings.WatchInterval or 2000)
+            if readyAt and next(known) then Clothing.reconcile(false) end
+        end
 
         readyAt = nil
     end
@@ -292,7 +340,7 @@ end)
 lib.onCache('ped', function()
     if not readyAt then return end
 
-    SetTimeout(settings.ApplyDelay or 3000, Clothing.reconcile)
+    SetTimeout(settings.ApplyDelay or 3000, function() Clothing.reconcile(true) end)
 end)
 
 exports('ReapplyClothing', Clothing.reconcile)
@@ -314,6 +362,60 @@ do
     end
 end
 
+-- ---- character selection screen (qb-multicharacter) --------------------------------------------
+-- The preview ped is dressed by qb-clothing with the saved outfit: the pieces the character changed are
+-- applied on it too, so he looks like he really does (the server sends the state when the screen asks
+-- for the skin of a character).
+
+local previews = {} -- [citizenid] = { state, at }
+
+RegisterNetEvent('pure_inventory:clothing:previewState', function(citizenid, state)
+    if type(citizenid) == 'string' and type(state) == 'table' then
+        previews[citizenid] = { state = state, at = GetGameTimer() }
+    end
+end)
+
+local function pedShows(ped, state)
+    for key, entry in pairs(state) do
+        local slot = slots[key]
+        if slot and type(entry) == 'table' then
+            local now = read(slot, ped)
+            if not matchesPiece(slot, now, entry.base, ped) and not matchesPiece(slot, now, entry.cur, ped) then return false end
+        end
+    end
+    return true
+end
+
+AddEventHandler('qb-clothing:client:loadPlayerClothing', function(_, ped)
+    if type(ped) ~= 'number' or ped == 0 or ped == PlayerPedId() or not DoesEntityExist(ped) then return end
+    CreateThread(function()
+        Wait(300)
+        if not DoesEntityExist(ped) then return end
+        local model = GetEntityModel(ped)
+        if model ~= MALE and model ~= FEMALE then return end
+
+        -- the state received for this selection, else the character whose outfit matches the ped
+        local chosen, newestAt = nil, 0
+        for _, p in pairs(previews) do
+            if next(p.state) and p.at > newestAt and GetGameTimer() - p.at < 3000 then chosen, newestAt = p.state, p.at end
+        end
+        if not chosen then
+            for _, p in pairs(previews) do
+                if next(p.state) and pedShows(ped, p.state) then chosen = p.state break end
+            end
+        end
+        if not chosen then return end
+
+        local deadline = GetGameTimer() + 3000
+        while DoesEntityExist(ped) and not pedShows(ped, chosen) and GetGameTimer() < deadline do Wait(100) end
+        if not DoesEntityExist(ped) then return end
+        for key, entry in pairs(chosen) do
+            local slot = slots[key]
+            if slot and type(entry) == 'table' then apply(slot, entry.cur, ped) end
+        end
+    end)
+end)
+
 -- Slots shown by the interface (sent with the `init` message).
 function Clothing.getSlots()
     local list = {}
@@ -331,10 +433,10 @@ function Clothing.getSlots()
 end
 
 RegisterNUICallback('previewStart', function(_, cb)
-    Preview.start()
+    -- the appearance script may have dressed the character since the last check: fixed before the 3D copy
+    if readyAt then Clothing.reconcile(false) end
 
-    -- the appearance script may have dressed the character since the last check
-    if readyAt then CreateThread(Clothing.reconcile) end
+    Preview.start()
 
     cb(Clothing.getState())
 end)
