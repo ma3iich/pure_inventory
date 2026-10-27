@@ -3,7 +3,7 @@
 
 <div align="center">
 
-<sub>🧩 <b>Suite Pure</b> &nbsp;·&nbsp; <a href="https://github.com/ma3iich/pure-target">Pure-Target</a> (menu clic droit) &nbsp;·&nbsp; <b>Pure Inventory</b> (inventaire) &nbsp;—&nbsp; chacun marche seul, et ils marchent ensemble</sub>
+<sub>🧩 <b>Suite Pure</b> &nbsp;·&nbsp; <a href="https://github.com/ma3iich/pure-target">Pure-Target</a> (menu clic droit) &nbsp;·&nbsp; <b>Pure Inventory</b> (inventaire) &nbsp;·&nbsp; <a href="https://github.com/ma3iich/pure_clothing">Pure Clothing</a> (vêtements) &nbsp;—&nbsp; chacun marche seul, et ils marchent ensemble</sub>
 
 
 <img src="docs/banner.png" alt="Pure Inventory — l'inventaire FiveM avec ton perso en 3D" width="100%">
@@ -213,7 +213,7 @@ Les sources de l'interface sont dans `web/src` (`cd web && npm install && npm ru
 
 <div align="center">
 
-<sub>🧩 <b>Pure suite</b> &nbsp;·&nbsp; <a href="https://github.com/ma3iich/pure-target">Pure-Target</a> (right-click menu) &nbsp;·&nbsp; <b>Pure Inventory</b> (inventory) &nbsp;—&nbsp; each one works standalone, and they work together</sub>
+<sub>🧩 <b>Pure suite</b> &nbsp;·&nbsp; <a href="https://github.com/ma3iich/pure-target">Pure-Target</a> (right-click menu) &nbsp;·&nbsp; <b>Pure Inventory</b> (inventory) &nbsp;·&nbsp; <a href="https://github.com/ma3iich/pure_clothing">Pure Clothing</a> (clothes) &nbsp;—&nbsp; each one works standalone, and they work together</sub>
 
 
 <img src="docs/banner.png" alt="Pure Inventory — the slot inventory for FiveM with your character in 3D" width="100%">
