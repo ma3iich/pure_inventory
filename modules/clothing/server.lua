@@ -166,6 +166,8 @@ lib.callback.register('pure_inventory:clothing:takeOff', function(source, key, t
     -- a piece put on from an item is known by the server: the client cannot change it
     local piece = entry and readPiece(slot, entry.cur) or reported
     if isNaked(slot, model, piece) then return false end
+    -- its picture comes from what the character wears (same piece), the server does not know collections
+    if not piece.c and reported.d == piece.d then piece.c = reported.c end
 
     toSlot = math.tointeger(toSlot)
 
@@ -203,6 +205,9 @@ lib.callback.register('pure_inventory:clothing:putOn', function(source, invSlot,
 
     local newPiece = readPiece(slot, data)
     if not newPiece then return false end
+    -- keep the picture of the item for the day the piece is taken off again
+    local url = type(item.metadata.imageurl) == 'string' and item.metadata.imageurl:match('^nui://pure_clothing/web/miniatures/(.+)%.webp$')
+    if url and url:match('^[mf]/[cp]%d+/[%w_]+/%d+$') then newPiece.c = url end
 
     -- what the character wears in this place now, as dressed by the appearance script (can be "nothing")
     local reported = readPiece(slot, current)
@@ -219,6 +224,7 @@ lib.callback.register('pure_inventory:clothing:putOn', function(source, invSlot,
     end
 
     if worn and isNaked(slot, model, worn) then worn = nil end
+    if worn and not worn.c and reported.d == worn.d then worn.c = reported.c end
 
     if not removeQuietly(source, invSlot) then return false end
 
@@ -264,6 +270,17 @@ end)
 
 AddEventHandler('playerDropped', function()
     lastAction[source] = nil
+end)
+
+-- Character selection screen (qb-multicharacter): when it asks for the skin of one of the player's
+-- characters, the pieces that character changed are sent too, for the preview ped.
+RegisterNetEvent('QBCore:Server:TriggerCallback', function(name, citizenid)
+    if name ~= 'qb-multicharacter:server:getSkin' or type(citizenid) ~= 'string' then return end
+    local src = source
+    local license = GetPlayerIdentifierByType(src, 'license')
+    local owner = MySQL.scalar.await('SELECT license FROM players WHERE citizenid = ?', { citizenid })
+    if not license or owner ~= license then return end
+    TriggerClientEvent('pure_inventory:clothing:previewState', src, citizenid, getState(citizenid))
 end)
 
 -- Characters that left are removed from memory (read again from the database next time).
