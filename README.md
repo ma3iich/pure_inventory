@@ -81,6 +81,10 @@ Standalone, ou prêt à l'emploi avec QBCore. Fork d'`ox_inventory` : tous les s
     <td>🔌 <b>Standalone ou QBCore</b><br><sub>Détecte ton framework tout seul (QBCore, Qbox, ESX, ox_core, ND), ou fonctionne sans framework.</sub></td>
     <td>🔒 <b>Serveur renforcé</b><br><sub>Contrôles serveur en plus sur chaque déplacement, dépôt, don, fabrication, achat et action d'arme (voir <a href="#-différences-avec-ox_inventory">différences</a>).</sub></td>
   </tr>
+  <tr>
+    <td>🧥 <b>Case Cintre et tenues</b> <sup>1.2.0</sup><br><sub>Tous tes vêtements dans un seul objet Tenue : glisse-la sur la case Cintre pour l'enfiler d'un coup, clique sur la case pour tout ranger (<a href="#-case-cintre-et-tenues">comment</a>).</sub></td>
+    <td>🎁 <b>Une tenue se partage</b><br><sub>Donne, échange ou range une tenue complète comme un seul objet. Renomme-la : elle garde son nom quand tu la mets et l'enlèves.</sub></td>
+  </tr>
 </table>
 
 Plus de 13 langues : English, Français, Deutsch, Español, Italiano, Português, Nederlands, Polski, Türkçe, Русский, 中文, 日本語, 한국어 (+ celles d'ox_inventory).
@@ -140,7 +144,7 @@ Tout est dans **`config.lua`**, avec un commentaire sur chaque ligne. Les grande
 | Comportement | reste ouvert quand on utilise un objet (et les objets qui le ferment quand même), marcher inventaire ouvert, flou, renommer |
 | Rendu (`Config.Theme`) | couleur **et opacité** des cases, opacité au survol, liseré, taille, espace, colonnes, lignes visibles, coins arrondis, bande du nom, couleur du texte, majuscules, police, couleurs du menu, taille / couleur des icônes / couleurs des cadenas des cases de vêtements |
 | Personnage 3D | position, taille, pose, lumière, zoom |
-| Cases de vêtements | quelles cases, de quel côté, **leur icône** (intégrée ou ton image), poids, valeurs « nu », animations, images avec Pure Clothing (`Pictures`), partie « Vêtements » du menu radial (`DisableRadialClothing`) |
+| Cases de vêtements | quelles cases, de quel côté, **leur icône** (intégrée ou ton image), poids, valeurs « nu », animations, images avec Pure Clothing (`Pictures`), partie « Vêtements » du menu radial (`DisableRadialClothing`), **case Cintre et tenues** (`Hanger`) |
 | Standalone | identifiant, groupes ACE, durée de conservation des coffres |
 | Avancé | les options d'origine d'ox_inventory |
 
@@ -164,6 +168,48 @@ Objets, magasins, coffres, établis et coffres de véhicules sont dans `data/` e
 
 ---
 
+## 🧥 Case Cintre et tenues
+
+<sub>Nouveau en 1.2.0</sub>
+
+Une **tenue** = tous les vêtements que tu portes, rangés dans **un seul objet**. On la donne, on l'échange, on la range dans un coffre, puis on l'enfile d'un coup.
+
+**En jeu**
+1. Achète un **cintre** (supérette 24/7, 20 $) et glisse-le sur la **case Cintre** (en bas, sous les cases de vêtements de gauche) : les vêtements que tu portes s'y accrochent.
+2. Clique sur la case Cintre (ou glisse-la dans l'inventaire) : tous tes vêtements partent dans un objet **Tenue**, ton personnage est en sous-vêtements.
+3. Glisse une tenue sur la case Cintre (ou clic droit &gt; Utiliser, ou lâche-la sur ton personnage) : barre de 8 s, les vêtements apparaissent un par un. Ce que tu portais revient dans ton inventaire (dans l'ancienne tenue s'il y en avait une sur le cintre).
+4. Tant qu'une tenue est sur le cintre, un vêtement enlevé par sa case en sort, un vêtement mis y entre.
+5. Clic droit &gt; Renommer sur un cintre ou une tenue : la tenue garde son nom. Vidée, elle redevient un cintre (avec son nom).
+
+**Où sont les objets**
+
+| Quoi | Où | Si tu as ton propre fichier |
+| --- | --- | --- |
+| Objets `outfit` (tenue) et `hanger` (cintre) | `data/items.lua`, juste après `clothing` | recopie les blocs `['outfit']` et `['hanger']` dans ton `data/items.lua` |
+| Images | `web/images/outfit.png` et `web/images/hanger.png` | rien à faire |
+| Vente du cintre (20 $) | `data/shops.lua`, boutique `General` (supérettes 24/7) : `{ name = 'hanger', price = 20 }` | ajoute cette ligne dans la boutique de ton choix |
+| Noms affichés « Outfit » / « Hanger » | `label` des deux objets dans `data/items.lua` | mets-les dans ta langue, ex. `label = 'Tenue'` et `label = 'Cintre'` |
+| Donner un cintre (admin) | commande en jeu | `/giveitem <id> hanger 1` |
+
+**Activer / désactiver** : dans `config.lua`, partie 6, bloc `Config.Clothing.Hanger`
+
+| Tu veux… | Change |
+| --- | --- |
+| Pas de case Cintre ni de tenues | `Enabled = false` |
+| La case dans la colonne de droite | `Side = 'right'` |
+| Garder le sac à dos hors des tenues | `Exclude = { bag = true }` (les clés des cases à garder à part, voir `Config.Clothing.Slots`) |
+| Une barre plus courte ou plus longue | `Duration = 8000` (en millisecondes) |
+| Une autre animation | `Anim = { dict = '...', clip = '...' }` |
+| Ne plus vendre de cintres | retire la ligne `{ name = 'hanger', price = 20 }` de `data/shops.lua` |
+
+- Pas de nouvelle table : la tenue posée sur le cintre est enregistrée avec les vêtements (`pure_inventory_clothing`).
+- Pas de cintre gratuit : une tenue ne se crée qu'à partir d'un cintre.
+- Tout est vérifié par le serveur : tenue toujours à sa place à la fin de la barre, modèle homme / femme, place dans l'inventaire avant de commencer. Inventaire plein au dernier moment : les vêtements sont posés à tes pieds.
+
+**Mise à jour depuis la 1.1.0** : remplace le dossier. Si tu avais modifié `config.lua`, `data/items.lua` ou `data/shops.lua`, garde les tiens et ajoute-y le bloc `Hanger = { ... }` (dans `Config.Clothing`), les objets `outfit` et `hanger`, et le cintre dans une boutique. Sans le bloc `Hanger`, la case Cintre reste simplement désactivée.
+
+---
+
 ## ❓ FAQ
 
 <details><summary><b>Un script dit qu'il lui faut ox_inventory</b></summary>
@@ -176,6 +222,14 @@ Les scripts qui affichent les images avec l'adresse <code>nui://ox_inventory/web
 
 <details><summary><b>Je ne veux pas le personnage 3D / les cases de vêtements</b></summary>
 <code>Config.PedPreview.Enabled = false</code> et / ou <code>Config.Clothing.Enabled = false</code>.
+</details>
+
+<details><summary><b>Je ne veux pas de case Cintre / de tenues</b></summary>
+<code>Config.Clothing.Hanger.Enabled = false</code> dans <code>config.lua</code> (voir <a href="#-case-cintre-et-tenues">Case Cintre et tenues</a>).
+</details>
+
+<details><summary><b>Comment traduire « Outfit » et « Hanger » ?</b></summary>
+Ce sont les noms des objets <code>outfit</code> et <code>hanger</code> : change leur <code>label</code> dans <code>data/items.lua</code>. La case, ses bulles et les messages sont déjà traduits dans <code>locales/</code>.
 </details>
 
 <details><summary><b>Comment changer l'icône d'une case de vêtement ?</b></summary>
@@ -192,7 +246,7 @@ Viens sur le <a href="https://discord.gg/C4jc8k3dD9">Discord</a> et ouvre un tic
 
 Pure Inventory part d'**ox_inventory 2.45.1** (fork TheOrderFivem, le dernier qui gère QBCore). Principaux changements :
 
-- **Nouveau :** personnage 3D, cases de vêtements, renommer dans la case, nouveau rendu piloté par `config.lua`, compteur de quantité (× / ›), anneau de poids, mode standalone, détection automatique du framework, `config.lua` au lieu des convars, japonais + nouveaux textes en 13 langues.
+- **Nouveau :** personnage 3D, cases de vêtements, case Cintre et tenues, renommer dans la case, nouveau rendu piloté par `config.lua`, compteur de quantité (× / ›), anneau de poids, mode standalone, détection automatique du framework, `config.lua` au lieu des convars, japonais + nouveaux textes en 13 langues.
 - **Comportement :** reste ouvert quand on utilise un objet / pendant les barres de chargement ox_lib et QBCore, marcher inventaire ouvert, se ferme quand une autre fenêtre prend le clavier, objets à lancer repris en main l'un après l'autre, animations chargées avant la barre, objets qui s'usent qui quittent leur pile un par un, conteneurs vides empilables, conteneurs sans poids / imbriquables.
 - **Sécurité (côté serveur) :** contrôles à chaque déplacement (toujours le droit d'utiliser l'autre inventaire : distance, plaque, verrou, droits de police / de vol), nombres entiers seulement, joueur menotté ou mort sans déplacement / utilisation / don, tas au sol limités et posés là où est le joueur, un joueur n'ouvre que SON coffre personnel, identifiant de coffre / boîte à gants tiré du véhicule, un client ne lit que son propre inventaire, fabrication impossible à sauter ou à lancer deux fois, achats revérifiés (métier, distance, quantité), actions d'arme vérifiées (munitions, accessoires, bidons), poubelles et casiers de preuves vérifiés par modèle / distance, « patron » = patron de CE métier.
 - **Corrections :** la fouille d'un joueur ne ferme plus l'inventaire du fouilleur quand l'autre ouvre le sien, plaque exacte, armes avec un accessoire sans pièce GTA, armes en véhicule, `clearevidence` vide vraiment le casier, fichier de langue espagnol.
@@ -291,6 +345,10 @@ Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_invent
     <td>🔌 <b>Standalone or QBCore</b><br><sub>Detects your framework by itself (QBCore, Qbox, ESX, ox_core, ND), or works without any framework.</sub></td>
     <td>🔒 <b>Hardened server</b><br><sub>Extra server checks on every move, drop, give, craft, purchase and weapon action (see <a href="#-changes-from-ox_inventory">changes</a>).</sub></td>
   </tr>
+  <tr>
+    <td>🧥 <b>Hanger slot and outfits</b> <sup>1.2.0</sup><br><sub>All your clothes in one Outfit item: drop it on the hanger slot to put everything on at once, click the slot to put everything away (<a href="#-hanger-slot-and-outfits">how</a>).</sub></td>
+    <td>🎁 <b>Share an outfit</b><br><sub>Give, trade or store a full outfit as one item. Rename it: it keeps its name when you put it on and take it off.</sub></td>
+  </tr>
 </table>
 
 13+ languages: English, Français, Deutsch, Español, Italiano, Português, Nederlands, Polski, Türkçe, Русский, 中文, 日本語, 한국어 (+ the ox_inventory ones).
@@ -350,7 +408,7 @@ Everything is in **`config.lua`**, with a comment on each line. The main parts:
 | Behaviour | stays open when an item is used (and which items still close it), walk while open, blur, rename |
 | Look (`Config.Theme`) | slot colour **and opacity**, hover opacity, outline, size, gap, columns, visible rows, rounded corners, label band, text colour, capitals, font, menu colours, clothing slot size / icon colour / lock colours |
 | Character preview | position, size, pose, light, zoom |
-| Clothing slots | which slots, on which side, **their icon** (built-in or your own image), weight, "naked" values, animations, pictures with Pure Clothing (`Pictures`), "Clothing" part of the radial menu (`DisableRadialClothing`) |
+| Clothing slots | which slots, on which side, **their icon** (built-in or your own image), weight, "naked" values, animations, pictures with Pure Clothing (`Pictures`), "Clothing" part of the radial menu (`DisableRadialClothing`), **hanger slot and outfits** (`Hanger`) |
 | Standalone | identifier, ACE groups, how long trunks are kept |
 | Advanced | the original ox_inventory options |
 
@@ -374,6 +432,48 @@ Items, shops, stashes, crafting benches and vehicle storages are in `data/` exac
 
 ---
 
+## 🧥 Hanger slot and outfits
+
+<sub>New in 1.2.0</sub>
+
+An **outfit** = every piece of clothing you wear, in **one item**. Give it, trade it, store it in a stash, then put it all on at once.
+
+**In game**
+1. Buy a **hanger** (24/7 stores, $20) and drop it on the **hanger slot** (at the bottom, under the left clothing slots): the clothes you wear hang on it.
+2. Click the hanger slot (or drag it into your inventory): all your clothes go into one **Outfit** item, your character is in underwear.
+3. Drop an outfit on the hanger slot (or right click &gt; Use, or drop it on your character): 8 s progress bar, the pieces appear one by one. What you wore goes back to your inventory (in the previous outfit if one was on the hanger).
+4. While an outfit is on the hanger, a piece taken off by its slot leaves it, a piece put on joins it.
+5. Right click &gt; Rename on a hanger or an outfit: the outfit keeps its name. Once emptied, it becomes a hanger again (with its name).
+
+**Where the items are**
+
+| What | Where | If you have your own file |
+| --- | --- | --- |
+| `outfit` and `hanger` items | `data/items.lua`, right after `clothing` | copy the `['outfit']` and `['hanger']` blocks into your `data/items.lua` |
+| Pictures | `web/images/outfit.png` and `web/images/hanger.png` | nothing to do |
+| Hanger sold for $20 | `data/shops.lua`, `General` shop (24/7 stores): `{ name = 'hanger', price = 20 }` | add this line to the shop you want |
+| Displayed names "Outfit" / "Hanger" | `label` of both items in `data/items.lua` | set them in your language |
+| Give a hanger (admin) | in-game command | `/giveitem <id> hanger 1` |
+
+**Turn things on / off**: in `config.lua`, part 6, `Config.Clothing.Hanger` block
+
+| You want… | Change |
+| --- | --- |
+| No hanger slot and no outfits | `Enabled = false` |
+| The slot in the right column | `Side = 'right'` |
+| Keep the backpack out of outfits | `Exclude = { bag = true }` (keys of the slots to keep apart, see `Config.Clothing.Slots`) |
+| A shorter or longer progress bar | `Duration = 8000` (milliseconds) |
+| Another animation | `Anim = { dict = '...', clip = '...' }` |
+| Stop selling hangers | remove the `{ name = 'hanger', price = 20 }` line from `data/shops.lua` |
+
+- No new table: the outfit on the hanger is saved with the clothes (`pure_inventory_clothing`).
+- No free hangers: an outfit can only be made from a hanger.
+- Everything is checked by the server: the outfit must still be in its slot at the end of the bar, male / female model, room in the inventory before starting. Inventory full at the last moment: the clothes are put at your feet.
+
+**Updating from 1.1.0**: replace the folder. If you changed `config.lua`, `data/items.lua` or `data/shops.lua`, keep yours and add the `Hanger = { ... }` block (inside `Config.Clothing`), the `outfit` and `hanger` items, and the hanger in a shop. Without the `Hanger` block, the hanger slot simply stays off.
+
+---
+
 ## ❓ FAQ
 
 <details><summary><b>A script says it needs ox_inventory</b></summary>
@@ -386,6 +486,14 @@ Scripts that show pictures with the address <code>nui://ox_inventory/web/images/
 
 <details><summary><b>I don't want the 3D character / the clothing slots</b></summary>
 <code>Config.PedPreview.Enabled = false</code> and / or <code>Config.Clothing.Enabled = false</code>.
+</details>
+
+<details><summary><b>I don't want the hanger slot / outfits</b></summary>
+<code>Config.Clothing.Hanger.Enabled = false</code> in <code>config.lua</code> (see <a href="#-hanger-slot-and-outfits">Hanger slot and outfits</a>).
+</details>
+
+<details><summary><b>How do I translate "Outfit" and "Hanger"?</b></summary>
+They are the names of the <code>outfit</code> and <code>hanger</code> items: change their <code>label</code> in <code>data/items.lua</code>. The slot, its tooltips and the messages are already translated in <code>locales/</code>.
 </details>
 
 <details><summary><b>How do I change the icon of a clothing slot?</b></summary>
@@ -402,7 +510,7 @@ Come to the <a href="https://discord.gg/C4jc8k3dD9">Discord</a> and open a ticke
 
 Pure Inventory starts from **ox_inventory 2.45.1** (TheOrderFivem fork, the last one with QBCore support). Main changes:
 
-- **New:** 3D character, clothing slots, rename in the slot, new look driven by `config.lua`, amount counter (× / ›), weight ring, standalone mode, automatic framework detection, `config.lua` instead of convars, Japanese + new texts in 13 languages.
+- **New:** 3D character, clothing slots, hanger slot and outfits, rename in the slot, new look driven by `config.lua`, amount counter (× / ›), weight ring, standalone mode, automatic framework detection, `config.lua` instead of convars, Japanese + new texts in 13 languages.
 - **Behaviour:** stays open when an item is used / during ox_lib and QBCore progress bars, walk while open, closes when another window takes the keyboard, throwables taken in hand one after the other, animations loaded before the progress bar, items that wear out leave their stack one by one, stackable empty containers, weightless / nestable containers.
 - **Security (server side):** checks on every move (still allowed to use the other inventory: distance, plate, lock, police / steal rights), whole numbers only, handcuffed or dead players cannot move / use / give items, piles on the ground limited and placed where the player stands, a player can only open his own personal stash, trunk and glovebox ids come from the vehicle, clients can only read their own inventory, crafting cannot be skipped or done twice at once, purchases checked again (job, distance, amount), weapon actions checked (ammo, attachments, cans), dumpsters and evidence lockers checked by model / distance, "boss" means boss of that job.
 - **Fixes:** search of a player no longer closes the searcher's inventory when the other player opens his own, exact plate match, weapons with an attachment without GTA component, weapons in vehicles, `clearevidence` really empties the locker, Spanish locale file.
