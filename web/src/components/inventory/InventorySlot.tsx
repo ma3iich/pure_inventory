@@ -21,6 +21,7 @@ import { fetchNui } from '../../utils/fetchNui';
 import { clearPendingLabel, getPendingLabel, getRenaming, useRenameState } from '../../store/rename';
 import RenameInput from '../pure/RenameInput';
 import type { ClothingDragSource } from '../pure/ClothingTile';
+import type { HangerDragSource } from '../pure/HangerTile';
 
 interface SlotProps {
   inventoryId: Inventory['id'];
@@ -68,9 +69,9 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
     [inventoryType, item]
   );
 
-  const [{ isOver }, drop] = useDrop<DragSource | ClothingDragSource, void, { isOver: boolean }>(
+  const [{ isOver }, drop] = useDrop<DragSource | ClothingDragSource | HangerDragSource, void, { isOver: boolean }>(
     () => ({
-      accept: ['SLOT', 'CLOTHING'],
+      accept: ['SLOT', 'CLOTHING', 'HANGER'],
       collect: (monitor) => ({
         isOver: monitor.isOver() && monitor.canDrop(),
       }),
@@ -80,6 +81,12 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
         // a worn piece of clothing dropped in the player inventory is taken off into this slot
         if (monitor.getItemType() === 'CLOTHING') {
           fetchNui('clothingTakeOff', { key: (dragged as ClothingDragSource).clothing, toSlot: item.slot });
+          return;
+        }
+
+        // the hanger slot dropped in the player inventory: the whole outfit is taken off into this slot
+        if (monitor.getItemType() === 'HANGER') {
+          fetchNui('hangerTakeOff', { toSlot: item.slot });
           return;
         }
 
@@ -98,7 +105,7 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
         }
       },
       canDrop: (dragged, monitor) => {
-        if (monitor.getItemType() === 'CLOTHING') return inventoryType === 'player';
+        if (monitor.getItemType() === 'CLOTHING' || monitor.getItemType() === 'HANGER') return inventoryType === 'player';
 
         const source = dragged as DragSource;
 

@@ -94,6 +94,9 @@
   "ui_use_on_character": "使用",
   "ui_clothing_takeoff": "點擊或拖入背包以脫下",
   "ui_clothing_puton": "把衣物拖到這裡穿上",
+  "ui_hanger_puton": "把套裝或衣架拖到這裡穿上",
+  "ui_hanger_takeoff": "點擊或拖入背包以脫下整套衣服",
+  "ui_hanger_count": "%s 件衣物",
   "ui_amount_hint": "移動數量（0 = 整組）",
   "ui_amount_all": "整組",
   "ui_amount_more": "再加一個",
@@ -113,7 +116,16 @@
   "clothing_gloves": "手套",
   "clothing_pants": "褲子",
   "clothing_shoes": "鞋子",
+  "clothing_hanger": "衣架",
   "clothing_wrong_model": "這件衣物不適合你的角色",
   "clothing_wrong_slot": "這個物品不能放在這裡",
-  "clothing_already_removed": "這件衣物已經在你的背包裡"
+  "clothing_already_removed": "這件衣物已經在你的背包裡",
+  "outfit_no_name": "未命名套裝",
+  "outfit_putting_on": "正在穿上套裝",
+  "outfit_pieces": "%d 件衣物：",
+  "outfit_wrong_item": "這裡只能放套裝或衣架",
+  "outfit_no_room": "背包空間不足，放不下你身上的衣物",
+  "outfit_damaged": "這件套裝已損壞",
+  "outfit_moved": "套裝已不在你的背包裡",
+  "outfit_dropped": "背包已滿：衣物已放在你的腳邊"
 }

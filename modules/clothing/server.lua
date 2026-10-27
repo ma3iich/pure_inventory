@@ -259,7 +259,8 @@ RegisterNetEvent('pure_inventory:clothing:forget', function(keys)
     for i = 1, math.min(#keys, 32) do
         local key = keys[i]
 
-        if type(key) == 'string' and state[key] then
+        -- slots only: the outfit on the hanger (`_hanger`) is not forgotten this way
+        if type(key) == 'string' and slots[key] and state[key] then
             state[key] = nil
             changed = true
         end
@@ -298,6 +299,19 @@ SetInterval(function()
 end, 30 * 60000)
 
 exports('GetClothingItem', function() return Items(itemName) end)
+
+-- Hanger slot and outfits (Config.Clothing.Hanger): they use the same state and the same checks as the slots.
+require('modules.clothing.outfit')({
+    itemName = itemName,
+    slots = slots,
+    getState = getState,
+    saveState = saveState,
+    getModel = getModel,
+    readPiece = readPiece,
+    isNaked = isNaked,
+    makeMetadata = makeMetadata,
+    tooFast = tooFast,
+})
 
 -- qb-radialmenu has a "Clothing" part that undresses the character without the slots (the piece never becomes
 -- an item). Its exports cannot hide one of its built-in entries (RemoveOption only removes entries added with

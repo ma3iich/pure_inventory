@@ -428,6 +428,48 @@ body.preview-rotating * {
   color: var(--pi-not-worn);
 }
 
+// hanger slot: picture of the outfit raised a little, its name below, the number of pieces in the corner
+.clothing-tile--hanger {
+  &.has-outfit {
+    .clothing-tile-picture,
+    .clothing-tile-icon {
+      width: 58%;
+      height: 58%;
+      margin-top: -1.3vh;
+    }
+  }
+
+  &.is-wrong {
+    box-shadow: inset 0 0 0 2px var(--pi-not-worn);
+  }
+}
+
+.clothing-tile-name {
+  position: absolute;
+  left: 0.35vh;
+  right: 0.35vh;
+  bottom: 0.55vh;
+  overflow: hidden;
+  font-size: 1.05vh;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--pi-text);
+  pointer-events: none;
+}
+
+.clothing-tile-count {
+  font-size: 1vh;
+  font-weight: 700;
+}
+
+.clothing-tile.is-on .clothing-tile-count {
+  color: var(--pi-worn);
+}
+
 .bottom-bar {
   position: fixed;
   left: 50%;

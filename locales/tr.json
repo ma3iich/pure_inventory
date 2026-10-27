@@ -94,6 +94,9 @@
   "ui_use_on_character": "Kullan",
   "ui_clothing_takeoff": "Çıkarmak için tıkla veya envantere sürükle",
   "ui_clothing_puton": "Giymek için bir kıyafeti buraya sürükle",
+  "ui_hanger_puton": "Giymek için bir kombini veya askıyı buraya sürükle",
+  "ui_hanger_takeoff": "Tüm kombini çıkarmak için tıkla veya envantere sürükle",
+  "ui_hanger_count": "%s parça kıyafet",
   "ui_amount_hint": "Taşınan miktar (0 = tüm yığın)",
   "ui_amount_all": "Tüm yığın",
   "ui_amount_more": "Bir tane daha",
@@ -113,7 +116,16 @@
   "clothing_gloves": "Eldiven",
   "clothing_pants": "Pantolon",
   "clothing_shoes": "Ayakkabı",
+  "clothing_hanger": "Askı",
   "clothing_wrong_model": "Bu kıyafet karakterine uymuyor",
   "clothing_wrong_slot": "Bu eşya buraya gitmez",
-  "clothing_already_removed": "Bu kıyafet zaten envanterinde"
+  "clothing_already_removed": "Bu kıyafet zaten envanterinde",
+  "outfit_no_name": "İsimsiz kombin",
+  "outfit_putting_on": "Kombin giyiliyor",
+  "outfit_pieces": "%d parça kıyafet:",
+  "outfit_wrong_item": "Buraya yalnızca bir kombin veya askı konabilir",
+  "outfit_no_room": "Giydiğin kıyafetler için envanterinde yeterli yer yok",
+  "outfit_damaged": "Bu kombin hasarlı",
+  "outfit_moved": "Kombin artık envanterinde değil",
+  "outfit_dropped": "Envanter dolu: kıyafetler ayaklarının dibine bırakıldı"
 }

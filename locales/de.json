@@ -94,6 +94,9 @@
   "ui_use_on_character": "Benutzen",
   "ui_clothing_takeoff": "Klicken oder ins Inventar ziehen, um es auszuziehen",
   "ui_clothing_puton": "Ein Kleidungsstück hierher ziehen, um es anzuziehen",
+  "ui_hanger_puton": "Ein Outfit oder einen Kleiderbügel hierher ziehen, um es anzuziehen",
+  "ui_hanger_takeoff": "Klicken oder ins Inventar ziehen, um das ganze Outfit auszuziehen",
+  "ui_hanger_count": "%s Kleidungsstück(e)",
   "ui_amount_hint": "Verschobene Menge (0 = ganzer Stapel)",
   "ui_amount_all": "Ganzer Stapel",
   "ui_amount_more": "Einer mehr",
@@ -113,7 +116,16 @@
   "clothing_gloves": "Handschuhe",
   "clothing_pants": "Hose",
   "clothing_shoes": "Schuhe",
+  "clothing_hanger": "Kleiderbügel",
   "clothing_wrong_model": "Dieses Kleidungsstück passt nicht zu deinem Charakter",
   "clothing_wrong_slot": "Dieser Gegenstand gehört nicht hierher",
-  "clothing_already_removed": "Dieses Kleidungsstück ist schon in deinem Inventar"
+  "clothing_already_removed": "Dieses Kleidungsstück ist schon in deinem Inventar",
+  "outfit_no_name": "Outfit ohne Namen",
+  "outfit_putting_on": "Outfit wird angezogen",
+  "outfit_pieces": "%d Kleidungsstück(e):",
+  "outfit_wrong_item": "Hier passt nur ein Outfit oder ein Kleiderbügel hin",
+  "outfit_no_room": "Nicht genug Platz im Inventar für die Kleidung, die du trägst",
+  "outfit_damaged": "Dieses Outfit ist beschädigt",
+  "outfit_moved": "Das Outfit ist nicht mehr in deinem Inventar",
+  "outfit_dropped": "Inventar voll: Kleidung wurde vor deine Füße gelegt"
 }

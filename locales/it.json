@@ -89,6 +89,9 @@
   "ui_use_on_character": "Usa",
   "ui_clothing_takeoff": "Clicca o trascinalo nell'inventario per toglierlo",
   "ui_clothing_puton": "Trascina qui un capo per indossarlo",
+  "ui_hanger_puton": "Trascina qui un completo o una gruccia per indossarlo",
+  "ui_hanger_takeoff": "Clicca o trascinalo nell'inventario per togliere tutto il completo",
+  "ui_hanger_count": "%s capo/i",
   "ui_amount_hint": "Quantità spostata (0 = tutta la pila)",
   "ui_amount_all": "Tutta la pila",
   "ui_amount_more": "Uno in più",
@@ -108,7 +111,16 @@
   "clothing_gloves": "Guanti",
   "clothing_pants": "Pantaloni",
   "clothing_shoes": "Scarpe",
+  "clothing_hanger": "Gruccia",
   "clothing_wrong_model": "Questo capo non va bene per il tuo personaggio",
   "clothing_wrong_slot": "Questo oggetto non va qui",
-  "clothing_already_removed": "Questo capo è già nel tuo inventario"
+  "clothing_already_removed": "Questo capo è già nel tuo inventario",
+  "outfit_no_name": "Completo senza nome",
+  "outfit_putting_on": "Indossando il completo",
+  "outfit_pieces": "%d capo/i:",
+  "outfit_wrong_item": "Qui va solo un completo o una gruccia",
+  "outfit_no_room": "Non c'è abbastanza spazio nell'inventario per i vestiti che indossi",
+  "outfit_damaged": "Questo completo è danneggiato",
+  "outfit_moved": "Il completo non è più nel tuo inventario",
+  "outfit_dropped": "Inventario pieno: i vestiti sono stati lasciati ai tuoi piedi"
 }

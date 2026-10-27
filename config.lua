@@ -189,6 +189,19 @@ Config.Clothing = {
     ApplyDelay = 500,
     ApplyTimeout = 10000,
     WatchInterval = 2000,       -- ms between two checks that another script did not dress the character again
+
+    -- Hanger slot, under the clothing slots: an outfit = all the worn clothes in ONE item, put on / taken off at once.
+    -- Players buy an empty hanger (data/shops.lua) and drop it on the slot: the clothes they wear hang on it.
+    -- Click the slot = the outfit goes into the inventory; drop an outfit on the slot (or use it) = it is put on.
+    Hanger = {
+        Enabled = true,             -- false = no hanger slot and no outfits
+        Side = 'left',              -- column of the slot ('left' or 'right'), shown at the bottom
+        OutfitItem = 'outfit',      -- item of a full outfit (data/items.lua)
+        HangerItem = 'hanger',      -- item of an empty hanger (data/items.lua, sold in the 24/7 shops of data/shops.lua)
+        Duration = 8000,            -- ms: progress bar to put an outfit on
+        Anim = { dict = 'clothingtie', clip = 'try_tie_positive_a' },
+        Exclude = {},               -- slots never put in an outfit, by key: { bag = true } keeps the bag apart
+    },
 }
 
 ---------------------------------------------------------------------------------------------------

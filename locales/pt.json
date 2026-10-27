@@ -94,6 +94,9 @@
   "ui_use_on_character": "Usar",
   "ui_clothing_takeoff": "Clique ou arraste para o inventário para tirar",
   "ui_clothing_puton": "Arraste uma peça de roupa aqui para vestir",
+  "ui_hanger_puton": "Arraste um conjunto ou um cabide aqui para vestir",
+  "ui_hanger_takeoff": "Clique ou arraste para o inventário para tirar o conjunto todo",
+  "ui_hanger_count": "%s peça(s) de roupa",
   "ui_amount_hint": "Quantidade movida (0 = a pilha toda)",
   "ui_amount_all": "Pilha toda",
   "ui_amount_more": "Mais um",
@@ -113,7 +116,16 @@
   "clothing_gloves": "Luvas",
   "clothing_pants": "Calças",
   "clothing_shoes": "Sapatos",
+  "clothing_hanger": "Cabide",
   "clothing_wrong_model": "Esta roupa não serve à tua personagem",
   "clothing_wrong_slot": "Este item não vai aqui",
-  "clothing_already_removed": "Esta roupa já está no teu inventário"
+  "clothing_already_removed": "Esta roupa já está no teu inventário",
+  "outfit_no_name": "Conjunto sem nome",
+  "outfit_putting_on": "A vestir o conjunto",
+  "outfit_pieces": "%d peça(s) de roupa:",
+  "outfit_wrong_item": "Aqui só vai um conjunto ou um cabide",
+  "outfit_no_room": "Não há espaço no teu inventário para a roupa que tens vestida",
+  "outfit_damaged": "Este conjunto está danificado",
+  "outfit_moved": "O conjunto já não está no teu inventário",
+  "outfit_dropped": "Inventário cheio: a roupa foi deixada aos teus pés"
 }

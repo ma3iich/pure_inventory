@@ -98,6 +98,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M9 14l2-1M11 15.6l2-1" />
     </>
   ),
+  hanger: (
+    <>
+      <path d="M10 5.6a2 2 0 1 1 2 2v1.2" />
+      <path d="M12 8.8 3.8 15.3c-.6.5-.3 1.5.5 1.5h15.4c.8 0 1.1-1 .5-1.5z" />
+    </>
+  ),
 };
 
 const ClothingIcon: React.FC<{ icon: string; className?: string }> = ({ icon, className }) => {

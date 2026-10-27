@@ -214,6 +214,25 @@ return {
 		consume = 0,
 	},
 
+	-- Outfit: every piece of clothing worn, in one item (hanger slot of the inventory, Config.Clothing.Hanger).
+	-- Name, list of the pieces and weight come from the metadata, set by modules/clothing/outfit.lua.
+	['outfit'] = {
+		label = 'Outfit',
+		weight = 0,
+		stack = false,
+		close = false,
+		consume = 0,
+	},
+
+	-- Empty hanger: dropped on the hanger slot, the clothes the player wears hang on it.
+	['hanger'] = {
+		label = 'Hanger',
+		weight = 100,
+		stack = true,
+		close = false,
+		consume = 0,
+	},
+
 	['mastercard'] = {
 		label = 'Fleeca Card',
 		stack = false,

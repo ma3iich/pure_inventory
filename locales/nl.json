@@ -90,6 +90,9 @@
   "ui_use_on_character": "Gebruiken",
   "ui_clothing_takeoff": "Klik of sleep het naar je inventaris om het uit te doen",
   "ui_clothing_puton": "Sleep hier een kledingstuk om het aan te doen",
+  "ui_hanger_puton": "Sleep hier een outfit of een kleerhanger om het aan te doen",
+  "ui_hanger_takeoff": "Klik of sleep het naar je inventaris om de hele outfit uit te doen",
+  "ui_hanger_count": "%s kledingstuk(ken)",
   "ui_amount_hint": "Verplaatst aantal (0 = de hele stapel)",
   "ui_amount_all": "Hele stapel",
   "ui_amount_more": "Eén meer",
@@ -109,7 +112,16 @@
   "clothing_gloves": "Handschoenen",
   "clothing_pants": "Broek",
   "clothing_shoes": "Schoenen",
+  "clothing_hanger": "Kleerhanger",
   "clothing_wrong_model": "Dit kledingstuk past niet bij je personage",
   "clothing_wrong_slot": "Dit voorwerp hoort hier niet",
-  "clothing_already_removed": "Dit kledingstuk zit al in je inventaris"
+  "clothing_already_removed": "Dit kledingstuk zit al in je inventaris",
+  "outfit_no_name": "Outfit zonder naam",
+  "outfit_putting_on": "Outfit aantrekken",
+  "outfit_pieces": "%d kledingstuk(ken):",
+  "outfit_wrong_item": "Hier past alleen een outfit of een kleerhanger",
+  "outfit_no_room": "Niet genoeg ruimte in je inventaris voor de kleding die je draagt",
+  "outfit_damaged": "Deze outfit is beschadigd",
+  "outfit_moved": "De outfit zit niet meer in je inventaris",
+  "outfit_dropped": "Inventaris vol: kleding is aan je voeten gelegd"
 }

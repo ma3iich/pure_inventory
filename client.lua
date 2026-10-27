@@ -1382,6 +1382,7 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 			imagepath = client.imagepath,
 			theme = shared.theme,
 			clothing = require('modules.clothing.client').getSlots(),
+			hanger = require('modules.clothing.client').getHanger(),
 			features = {
 				preview = shared.preview.Enabled == true,
 				clothing = shared.clothing.Enabled == true,

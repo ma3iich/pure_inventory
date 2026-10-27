@@ -94,6 +94,9 @@
   "ui_use_on_character": "Użyj",
   "ui_clothing_takeoff": "Kliknij lub przeciągnij do ekwipunku, aby zdjąć",
   "ui_clothing_puton": "Przeciągnij tu ubranie, aby je założyć",
+  "ui_hanger_puton": "Przeciągnij tu strój lub wieszak, aby go założyć",
+  "ui_hanger_takeoff": "Kliknij lub przeciągnij do ekwipunku, aby zdjąć cały strój",
+  "ui_hanger_count": "Ubrania: %s",
   "ui_amount_hint": "Przenoszona ilość (0 = cały stos)",
   "ui_amount_all": "Cały stos",
   "ui_amount_more": "Jeden więcej",
@@ -113,7 +116,16 @@
   "clothing_gloves": "Rękawiczki",
   "clothing_pants": "Spodnie",
   "clothing_shoes": "Buty",
+  "clothing_hanger": "Wieszak",
   "clothing_wrong_model": "To ubranie nie pasuje do twojej postaci",
   "clothing_wrong_slot": "Ten przedmiot tu nie pasuje",
-  "clothing_already_removed": "To ubranie jest już w twoim ekwipunku"
+  "clothing_already_removed": "To ubranie jest już w twoim ekwipunku",
+  "outfit_no_name": "Strój bez nazwy",
+  "outfit_putting_on": "Zakładanie stroju",
+  "outfit_pieces": "Ubrania: %d",
+  "outfit_wrong_item": "Tu pasuje tylko strój lub wieszak",
+  "outfit_no_room": "Za mało miejsca w ekwipunku na ubrania, które nosisz",
+  "outfit_damaged": "Ten strój jest uszkodzony",
+  "outfit_moved": "Stroju nie ma już w twoim ekwipunku",
+  "outfit_dropped": "Pełny ekwipunek: ubrania położono u twoich stóp"
 }

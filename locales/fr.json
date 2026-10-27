@@ -94,6 +94,9 @@
   "ui_use_on_character": "Utiliser",
   "ui_clothing_takeoff": "Cliquez ou glissez-le dans l'inventaire pour l'enlever",
   "ui_clothing_puton": "Glissez un vêtement ici pour le mettre",
+  "ui_hanger_puton": "Glissez une tenue ou un cintre ici pour l'enfiler",
+  "ui_hanger_takeoff": "Cliquez ou glissez-la dans l'inventaire pour enlever toute la tenue",
+  "ui_hanger_count": "%s vêtement(s)",
   "ui_amount_hint": "Quantité déplacée (0 = toute la pile)",
   "ui_amount_all": "Toute la pile",
   "ui_amount_more": "Un de plus",
@@ -113,7 +116,16 @@
   "clothing_gloves": "Gants",
   "clothing_pants": "Pantalon",
   "clothing_shoes": "Chaussures",
+  "clothing_hanger": "Cintre",
   "clothing_wrong_model": "Ce vêtement ne va pas à votre personnage",
   "clothing_wrong_slot": "Cet objet ne va pas ici",
-  "clothing_already_removed": "Ce vêtement est déjà dans votre inventaire"
+  "clothing_already_removed": "Ce vêtement est déjà dans votre inventaire",
+  "outfit_no_name": "Tenue sans nom",
+  "outfit_putting_on": "Mise en place de la tenue",
+  "outfit_pieces": "%d vêtement(s) :",
+  "outfit_wrong_item": "Seule une tenue ou un cintre va ici",
+  "outfit_no_room": "Pas assez de place dans votre inventaire pour les vêtements que vous portez",
+  "outfit_damaged": "Cette tenue est abîmée",
+  "outfit_moved": "La tenue n'est plus dans votre inventaire",
+  "outfit_dropped": "Inventaire plein : des vêtements sont posés à vos pieds"
 }

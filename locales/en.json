@@ -94,6 +94,9 @@
   "ui_use_on_character": "Use",
   "ui_clothing_takeoff": "Click or drag it into your inventory to take it off",
   "ui_clothing_puton": "Drag a piece of clothing here to put it on",
+  "ui_hanger_puton": "Drag an outfit or a hanger here to put it on",
+  "ui_hanger_takeoff": "Click or drag it into your inventory to take the whole outfit off",
+  "ui_hanger_count": "%s piece(s) of clothing",
   "ui_amount_hint": "Amount moved (0 = the whole stack)",
   "ui_amount_all": "Whole stack",
   "ui_amount_more": "One more",
@@ -113,7 +116,16 @@
   "clothing_gloves": "Gloves",
   "clothing_pants": "Pants",
   "clothing_shoes": "Shoes",
+  "clothing_hanger": "Hanger",
   "clothing_wrong_model": "This piece of clothing does not fit your character",
   "clothing_wrong_slot": "This item does not go here",
-  "clothing_already_removed": "This piece is already in your inventory"
+  "clothing_already_removed": "This piece is already in your inventory",
+  "outfit_no_name": "Outfit without a name",
+  "outfit_putting_on": "Putting the outfit on",
+  "outfit_pieces": "%d piece(s) of clothing:",
+  "outfit_wrong_item": "Only an outfit or a hanger goes here",
+  "outfit_no_room": "Not enough room in your inventory for the clothes you are wearing",
+  "outfit_damaged": "This outfit is damaged",
+  "outfit_moved": "The outfit is no longer in your inventory",
+  "outfit_dropped": "Inventory full: clothes were put at your feet"
 }

@@ -11,6 +11,7 @@ local Clothing = {}
 
 if not settings.Enabled then
     Clothing.getSlots = function() return {} end
+    Clothing.getHanger = function() return nil end
     return Clothing
 end
 
@@ -22,6 +23,12 @@ local slots = {}
 for _, slot in ipairs(settings.Slots or {}) do
     slots[slot.key] = slot
 end
+
+-- Hanger slot and outfits (see modules/clothing/outfit.lua)
+local hanger = type(settings.Hanger) == 'table' and settings.Hanger.Enabled and settings.Hanger or nil
+local outfitItem = hanger and (hanger.OutfitItem or 'outfit')
+local hangerItem = hanger and (hanger.HangerItem or 'hanger')
+local excluded = hanger and type(hanger.Exclude) == 'table' and hanger.Exclude or {}
 
 -- Default animations (dict, clip, duration ms); a slot of the config can have its own `anim`.
 local ANIMS = {
@@ -147,6 +154,8 @@ local function picturesOn()
     return settings.Pictures ~= false and GetResourceState('pure_clothing') == 'started'
 end
 
+local known = {} -- state of the character (what he changed, the outfit on the hanger), as the server knows it
+
 function Clothing.getState()
     local state = { supported = supported(), worn = {}, pictures = {} }
 
@@ -158,6 +167,15 @@ function Clothing.getState()
             if pictures and state.worn[key] and piece.c then
                 state.pictures[key] = ('nui://pure_clothing/web/miniatures/%s.webp'):format(piece.c)
             end
+        end
+
+        -- outfit on the hanger: its name and the number of worn pieces it holds
+        if hanger and type(known._hanger) == 'table' then
+            local count = 0
+            for key in pairs(slots) do
+                if state.worn[key] and not excluded[key] then count = count + 1 end
+            end
+            state.hanger = { label = known._hanger.label or locale('outfit_no_name'), count = count }
         end
     end
 
@@ -189,8 +207,6 @@ local function run(action)
 end
 
 ---Takes off the piece of the slot `key`; it goes in the inventory slot `toSlot` (or the first free one).
-local known = {} -- state of the character (what he changed), as the server knows it
-
 function Clothing.takeOff(key, toSlot)
     local slot = slots[key]
     if not slot then return end
@@ -239,6 +255,118 @@ function Clothing.putOn(invSlot, expectedKey)
         else
             notify(piece)
         end
+    end)
+end
+
+-- ---- hanger slot and outfits ---------------------------------------------------------------------------------
+
+local function readAll()
+    local list = {}
+    for key, slot in pairs(slots) do list[key] = read(slot) end
+    return list
+end
+
+-- A piece read before a change, put back as it was (a prop that was not worn is removed).
+local function restore(slot, piece)
+    if type(piece) ~= 'table' then return end
+    if slot.prop and piece.d < 0 then return ClearPedProp(cache.ped, slot.prop) end
+    apply(slot, piece)
+end
+
+-- Slots changed by the server: what was taken off first, then what is put on, in the order of the config
+-- (the gloves after the top: they share the arms).
+local function applyChanges(result)
+    if type(result) ~= 'table' then return end
+    local changed = type(result.changed) == 'table' and result.changed or {}
+
+    for _, slot in ipairs(settings.Slots or {}) do
+        local entry = changed[slot.key]
+        if type(entry) == 'table' and entry.cur == 'off' then
+            known[slot.key] = entry
+            apply(slots[slot.key], 'off')
+        end
+    end
+
+    for _, slot in ipairs(settings.Slots or {}) do
+        local entry = changed[slot.key]
+        if type(entry) == 'table' and type(entry.cur) == 'table' then
+            known[slot.key] = entry
+            apply(slots[slot.key], entry.cur)
+        end
+    end
+
+    if result.hanger ~= nil then known._hanger = result.hanger or nil end
+end
+
+---Puts on the outfit (or the empty hanger) of the inventory slot `invSlot`: dropped on the hanger slot, used, or
+---dropped on the character.
+function Clothing.useHanger(invSlot)
+    if not hanger then return end
+
+    local item = PlayerData.inventory[invSlot]
+    if not item or (item.name ~= outfitItem and item.name ~= hangerItem) then return notify('outfit_wrong_item') end
+
+    local data = item.name == outfitItem and type(item.metadata) == 'table' and item.metadata.outfit
+    if type(data) == 'table' and data.model and data.model ~= GetEntityModel(cache.ped) then
+        return notify('clothing_wrong_model')
+    end
+
+    run(function()
+        local before = readAll()
+        local ok, result = lib.callback.await('pure_inventory:outfit:start', false, invSlot, before)
+
+        if not ok then return notify(result) end
+        if result.done then return applyChanges(result) end
+
+        -- the pieces appear one by one during the bar
+        local pieces = type(result.pieces) == 'table' and result.pieces or {}
+        local finished = false
+
+        CreateThread(function()
+            local step = math.floor((result.duration or 0) / (#pieces + 1))
+            for _, w in ipairs(pieces) do
+                Wait(step)
+                if finished then return end
+                if slots[w.key] then apply(slots[w.key], w.piece) end
+            end
+        end)
+
+        local anim = type(hanger.Anim) == 'table' and hanger.Anim or {}
+        local done = lib.progressBar({
+            duration = result.duration,
+            label = locale('outfit_putting_on'),
+            useWhileDead = false,
+            canCancel = true,
+            disable = { car = true, combat = true },
+            anim = anim.dict and { dict = anim.dict, clip = anim.clip, flag = 49 } or nil,
+        })
+
+        finished = true
+
+        -- `before`: what he wore when the bar started (the pieces shown during the bar are not his yet)
+        local success, final = lib.callback.await('pure_inventory:outfit:finish', false, done == true, before)
+
+        if success then
+            applyChanges(final)
+        else
+            for _, w in ipairs(pieces) do
+                if slots[w.key] then restore(slots[w.key], before[w.key]) end
+            end
+            notify(final)
+        end
+    end)
+end
+
+---Takes the outfit off the hanger: every worn piece goes in one item (in the inventory slot `toSlot` when it is free).
+function Clothing.takeOffOutfit(toSlot)
+    if not hanger or not known._hanger then return end
+
+    run(function()
+        playAnim(slots.jacket or { key = 'jacket' })
+
+        local ok, result = lib.callback.await('pure_inventory:outfit:takeOff', false, toSlot, readAll())
+
+        if ok then applyChanges(result) else notify(result) end
     end)
 end
 
@@ -360,6 +488,14 @@ do
             end
         end
     end
+
+    -- Using an outfit or a hanger (right click > Use, dropped on the character) puts it on the hanger slot.
+    for _, name in ipairs(hanger and { outfitItem, hangerItem } or {}) do
+        local data = Items[name]
+        if data then
+            data.effect = function(_, slotData) Clothing.useHanger(slotData.slot) end
+        end
+    end
 end
 
 -- ---- character selection screen (qb-multicharacter) --------------------------------------------
@@ -432,6 +568,18 @@ function Clothing.getSlots()
     return list
 end
 
+-- Hanger slot shown by the interface (sent with the `init` message), nil when it is disabled.
+function Clothing.getHanger()
+    if not hanger then return nil end
+
+    return {
+        side = hanger.Side == 'right' and 'right' or 'left',
+        label = locale('clothing_hanger'),
+        outfitItem = outfitItem,
+        hangerItem = hangerItem,
+    }
+end
+
 RegisterNUICallback('previewStart', function(_, cb)
     -- the appearance script may have dressed the character since the last check: fixed before the 3D copy
     if readyAt then Clothing.reconcile(false) end
@@ -464,6 +612,27 @@ RegisterNUICallback('clothingPutOn', function(data, cb)
 
     CreateThread(function()
         Clothing.putOn(slot, type(data.key) == 'string' and data.key or nil)
+    end)
+end)
+
+RegisterNUICallback('hangerDrop', function(data, cb)
+    cb(1)
+
+    local slot = type(data) == 'table' and math.tointeger(tonumber(data.slot))
+    if not slot then return end
+
+    CreateThread(function()
+        Clothing.useHanger(slot)
+    end)
+end)
+
+RegisterNUICallback('hangerTakeOff', function(data, cb)
+    cb(1)
+
+    local toSlot = type(data) == 'table' and math.tointeger(tonumber(data.toSlot)) or nil
+
+    CreateThread(function()
+        Clothing.takeOffOutfit(toSlot)
     end)
 end)
 

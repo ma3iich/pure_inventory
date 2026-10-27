@@ -7,6 +7,7 @@ import useNuiEvent from '../../hooks/useNuiEvent';
 import { onUse } from '../../dnd/onUse';
 import { Locale } from '../../store/locale';
 import ClothingTile from './ClothingTile';
+import HangerTile, { HangerState } from './HangerTile';
 import QuantityControl from './QuantityControl';
 import WeightRing from './WeightRing';
 
@@ -14,13 +15,21 @@ interface ClothingState {
   supported: boolean;
   worn: Record<string, boolean>;
   pictures?: Record<string, string>;
+  hanger?: HangerState | null;
 }
+
+const readState = (data: ClothingState): ClothingState => ({
+  supported: !!data.supported,
+  worn: data.worn || {},
+  pictures: data.pictures || {},
+  hanger: data.hanger || null,
+});
 
 // Middle of the inventory: the 3D character (drawn by the game, see modules/preview/client.lua), the clothing
 // slots on each side, and at the bottom the amount and the weight.
 const CenterColumn: React.FC = () => {
-  const { features, clothing } = useSettings();
-  const [state, setState] = useState<ClothingState>({ supported: false, worn: {}, pictures: {} });
+  const { features, clothing, hanger } = useSettings();
+  const [state, setState] = useState<ClothingState>({ supported: false, worn: {}, pictures: {}, hanger: null });
   const dragging = useRef<{ x: number; total: number; timer: number | null } | null>(null);
 
   useEffect(() => {
@@ -28,7 +37,7 @@ const CenterColumn: React.FC = () => {
 
     if (features.preview || features.clothing) {
       fetchNui<ClothingState>('previewStart')
-        .then((data) => mounted && data && setState({ supported: !!data.supported, worn: data.worn || {}, pictures: data.pictures || {} }))
+        .then((data) => mounted && data && setState(readState(data)))
         .catch(() => {});
     }
 
@@ -38,7 +47,7 @@ const CenterColumn: React.FC = () => {
     };
   }, [features.preview, features.clothing]);
 
-  useNuiEvent<ClothingState>('clothingState', (data) => setState({ supported: !!data.supported, worn: data.worn || {}, pictures: data.pictures || {} }));
+  useNuiEvent<ClothingState>('clothingState', (data) => setState(readState(data)));
 
   // an item of the player dropped on the character is used (clothes are put on)
   const [{ isOver }, drop] = useDrop<DragSource, void, { isOver: boolean }>(
@@ -91,7 +100,9 @@ const CenterColumn: React.FC = () => {
   const showTiles = features.clothing && state.supported && clothing.length > 0;
   const left = clothing.filter((slot) => slot.side === 'left');
   const right = clothing.filter((slot) => slot.side === 'right');
-  const rows = Math.max(left.length, right.length, 1);
+  // the hanger slot goes at the bottom of its column
+  const hangerTile = hanger && <HangerTile config={hanger} outfit={state.hanger} />;
+  const rows = Math.max(left.length + (hanger?.side === 'left' ? 1 : 0), right.length + (hanger?.side === 'right' ? 1 : 0), 1);
 
   return (
     <div className="center-column" style={{ ['--pi-clothing-rows' as any]: rows }}>
@@ -123,11 +134,13 @@ const CenterColumn: React.FC = () => {
             {left.map((slot) => (
               <ClothingTile key={slot.key} slot={slot} worn={!!state.worn[slot.key]} picture={state.pictures?.[slot.key]} />
             ))}
+            {hanger?.side === 'left' && hangerTile}
           </div>
           <div className="clothing-column clothing-column--right">
             {right.map((slot) => (
               <ClothingTile key={slot.key} slot={slot} worn={!!state.worn[slot.key]} picture={state.pictures?.[slot.key]} />
             ))}
+            {hanger?.side === 'right' && hangerTile}
           </div>
         </>
       )}

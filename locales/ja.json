@@ -94,6 +94,9 @@
   "ui_use_on_character": "使う",
   "ui_clothing_takeoff": "クリックするか持ち物にドラッグして脱ぐ",
   "ui_clothing_puton": "服をここにドラッグして着る",
+  "ui_hanger_puton": "コーデかハンガーをここにドラッグして着る",
+  "ui_hanger_takeoff": "クリックするか持ち物にドラッグしてコーデ全体を脱ぐ",
+  "ui_hanger_count": "服 %s 点",
   "ui_amount_hint": "移動する数（0 = スタック全部）",
   "ui_amount_all": "全部",
   "ui_amount_more": "もう一つ",
@@ -113,7 +116,16 @@
   "clothing_gloves": "手袋",
   "clothing_pants": "ズボン",
   "clothing_shoes": "靴",
+  "clothing_hanger": "ハンガー",
   "clothing_wrong_model": "この服はあなたのキャラクターに合いません",
   "clothing_wrong_slot": "このアイテムはここに置けません",
-  "clothing_already_removed": "この服はすでに持ち物にあります"
+  "clothing_already_removed": "この服はすでに持ち物にあります",
+  "outfit_no_name": "名前のないコーデ",
+  "outfit_putting_on": "コーデに着替え中",
+  "outfit_pieces": "服 %d 点:",
+  "outfit_wrong_item": "ここにはコーデかハンガーしか置けません",
+  "outfit_no_room": "着ている服を入れる空きが持ち物にありません",
+  "outfit_damaged": "このコーデは壊れています",
+  "outfit_moved": "コーデはもう持ち物にありません",
+  "outfit_dropped": "持ち物がいっぱい：服を足元に置きました"
 }

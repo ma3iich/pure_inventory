@@ -84,6 +84,9 @@
   "ui_use_on_character": "사용",
   "ui_clothing_takeoff": "클릭하거나 인벤토리로 끌어서 벗기",
   "ui_clothing_puton": "옷을 여기로 끌어서 입기",
+  "ui_hanger_puton": "의상이나 옷걸이를 여기로 끌어서 입기",
+  "ui_hanger_takeoff": "클릭하거나 인벤토리로 끌어서 의상 전체 벗기",
+  "ui_hanger_count": "옷 %s벌",
   "ui_amount_hint": "옮길 개수 (0 = 전체)",
   "ui_amount_all": "전체",
   "ui_amount_more": "하나 더",
@@ -103,7 +106,16 @@
   "clothing_gloves": "장갑",
   "clothing_pants": "바지",
   "clothing_shoes": "신발",
+  "clothing_hanger": "옷걸이",
   "clothing_wrong_model": "이 옷은 당신의 캐릭터에게 맞지 않습니다",
   "clothing_wrong_slot": "이 아이템은 여기에 둘 수 없습니다",
-  "clothing_already_removed": "이 옷은 이미 인벤토리에 있습니다"
+  "clothing_already_removed": "이 옷은 이미 인벤토리에 있습니다",
+  "outfit_no_name": "이름 없는 의상",
+  "outfit_putting_on": "의상 입는 중",
+  "outfit_pieces": "옷 %d벌:",
+  "outfit_wrong_item": "여기에는 의상이나 옷걸이만 놓을 수 있습니다",
+  "outfit_no_room": "입고 있는 옷을 넣을 공간이 인벤토리에 없습니다",
+  "outfit_damaged": "이 의상은 손상되었습니다",
+  "outfit_moved": "의상이 더 이상 인벤토리에 없습니다",
+  "outfit_dropped": "인벤토리가 가득 참: 옷을 발밑에 내려놓았습니다"
 }

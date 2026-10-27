@@ -93,6 +93,9 @@
   "ui_use_on_character": "Usar",
   "ui_clothing_takeoff": "Haz clic o arrástralo al inventario para quitártelo",
   "ui_clothing_puton": "Arrastra una prenda aquí para ponértela",
+  "ui_hanger_puton": "Arrastra un conjunto o una percha aquí para ponértelo",
+  "ui_hanger_takeoff": "Haz clic o arrástralo al inventario para quitarte todo el conjunto",
+  "ui_hanger_count": "%s prenda(s)",
   "ui_amount_hint": "Cantidad movida (0 = todo el montón)",
   "ui_amount_all": "Todo el montón",
   "ui_amount_more": "Uno más",
@@ -112,7 +115,16 @@
   "clothing_gloves": "Guantes",
   "clothing_pants": "Pantalones",
   "clothing_shoes": "Zapatos",
+  "clothing_hanger": "Percha",
   "clothing_wrong_model": "Esta prenda no es para tu personaje",
   "clothing_wrong_slot": "Este objeto no va aquí",
-  "clothing_already_removed": "Esta prenda ya está en tu inventario"
+  "clothing_already_removed": "Esta prenda ya está en tu inventario",
+  "outfit_no_name": "Conjunto sin nombre",
+  "outfit_putting_on": "Poniéndote el conjunto",
+  "outfit_pieces": "%d prenda(s):",
+  "outfit_wrong_item": "Aquí solo va un conjunto o una percha",
+  "outfit_no_room": "No hay espacio en tu inventario para la ropa que llevas",
+  "outfit_damaged": "Este conjunto está dañado",
+  "outfit_moved": "El conjunto ya no está en tu inventario",
+  "outfit_dropped": "Inventario lleno: la ropa se ha dejado a tus pies"
 }
