@@ -4,7 +4,7 @@ lua54 'yes'
 game 'gta5'
 name 'pure_inventory'
 author 'ma3iich (fork of ox_inventory by Overextended / TheOrderFivem)'
-version '1.2.0'
+version '1.2.1'
 repository 'https://github.com/ma3iich/pure_inventory'
 description 'Slot-based inventory with a 3D character, clothing slots and a customisable look. Standalone or QBCore.'
 
