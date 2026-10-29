@@ -786,7 +786,7 @@ lib.addCommand('clearevidence', {
 		return TriggerClientEvent('ox_lib:notify', source, { type = 'error', description = locale('cannot_perform') })
 	end
 
-	-- cleared in memory too: deleting only the database row was undone by the next save
+	-- cleared in memory too, otherwise the next save writes the old content back to the database
 	local evidence = Inventory(('evidence-%s'):format(locker))
 
 	if evidence then

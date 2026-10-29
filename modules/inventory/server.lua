@@ -141,7 +141,7 @@ local function loadInventoryData(data, player, ignoreSecurityChecks)
 					local vehicle = vehicles[i]
 					local _plate = GetVehicleNumberPlateText(vehicle)
 
-					-- exact plate (find() also matched "AB 12" inside "XAB 123", and treated the plate as a pattern)
+					-- exact plate only: "AB 12" does not match "XAB 123"
 					if _plate and string.strtrim(_plate) == wanted then
 						entity = vehicle
                         data.entityId = entity
@@ -1072,7 +1072,7 @@ function Inventory.SetDurability(inv, slotId, durability)
 	local newSlot
 
 	-- In a stack, only ONE item wears out: it leaves the stack (joins a stack with the same durability,
-	-- or the first empty slot). Without a free slot the whole stack takes the durability, as before.
+	-- or the first empty slot). Without a free slot the whole stack takes the durability.
 	if slot.count > 1 and slot.metadata.durability ~= durability then
 		if item.decay and durability <= 0 then
 			Inventory.RemoveItem(inv, item, 1, nil, slotId)

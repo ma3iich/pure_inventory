@@ -62,7 +62,7 @@ local function getCraftingCoords(source, bench, index)
 	if not bench.zones and not bench.points then
 		return GetEntityCoords(GetPlayerPed(source))
 	elseif shared.target then
-		-- a wrong index sent by the client returns nil (it used to throw an error)
+		-- a wrong index sent by the client returns nil
 		local zone = bench.zones and bench.zones[index]
 		return zone and zone.coords
 	else
