@@ -499,6 +499,16 @@ end)
 
 exports('ReapplyClothing', Clothing.reconcile)
 
+-- Slots forgotten by the server (their piece was in an item removed from the inventory, /clearinv...): the character
+-- keeps what he wears, and the outfit another script puts on him later stays on.
+RegisterNetEvent('pure_inventory:clothing:forgotten', function(keys)
+    if source == '' or type(keys) ~= 'table' then return end
+
+    for _, key in ipairs(keys) do
+        if type(key) == 'string' and slots[key] then known[key] = nil end
+    end
+end)
+
 -- Using a clothing item (right click > Use, ALT + click, dropped on the character) puts it on.
 do
     local item = Items[settings.Item or 'clothing']

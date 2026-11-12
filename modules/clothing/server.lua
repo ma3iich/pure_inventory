@@ -269,6 +269,48 @@ RegisterNetEvent('pure_inventory:clothing:forget', function(keys)
     if changed then saveState(inv.owner) end
 end)
 
+local outfitItem = type(settings.Hanger) == 'table' and settings.Hanger.OutfitItem or 'outfit'
+
+---Items removed from a player's inventory for good (Inventory.Clear: /clearinv, ClearInventory export...).
+---A slot taken off whose piece was in one of them has no item left anywhere: it is forgotten, and the outfit another
+---script puts on the character in that slot stays on. The character keeps what he wears.
+AddEventHandler('pure_inventory:itemsCleared', function(playerId, removed)
+    local inv = Inventory(playerId)
+    if not inv or not inv.owner or type(removed) ~= 'table' then return end
+
+    local model = getModel(playerId)
+    if not model then return end
+
+    local state = getState(inv.owner)
+    local forgotten = {}
+
+    local function forgetSlot(key, piece)
+        local entry = state[key]
+
+        -- only the piece the slot was taken off with: another one (given by a player...) leaves the slot as it is
+        if slots[key] and entry and entry.cur == 'off' and samePiece(entry.base, piece) then
+            state[key] = nil
+            forgotten[#forgotten + 1] = key
+        end
+    end
+
+    for _, item in ipairs(removed) do
+        local metadata = type(item) == 'table' and type(item.metadata) == 'table' and item.metadata
+
+        if metadata and item.name == itemName and type(metadata.clothing) == 'table' and metadata.clothing.model == model then
+            forgetSlot(metadata.clothing.key, metadata.clothing)
+        elseif metadata and item.name == outfitItem and type(metadata.outfit) == 'table' and metadata.outfit.model == model
+            and type(metadata.outfit.pieces) == 'table' then
+            for key, piece in pairs(metadata.outfit.pieces) do forgetSlot(key, piece) end
+        end
+    end
+
+    if #forgotten == 0 then return end
+
+    saveState(inv.owner)
+    TriggerClientEvent('pure_inventory:clothing:forgotten', playerId, forgotten)
+end)
+
 AddEventHandler('playerDropped', function()
     lastAction[source] = nil
 end)

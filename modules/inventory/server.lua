@@ -1651,7 +1651,7 @@ exports('CreateDropFromPlayer', function(playerId)
 		instance = getDropInstance(playerId)
 	}
 
-	Inventory.Clear(playerInventory)
+	Inventory.Clear(playerInventory, nil, true)
 	TriggerClientEvent('ox_inventory:createDrop', -1, dropId, Inventory.Drops[dropId])
 
 	return dropId
@@ -2286,11 +2286,14 @@ exports('ReturnInventory', Inventory.Return)
 
 ---@param inv inventory
 ---@param keep? string | string[] an item or list of items to ignore while clearing items
-function Inventory.Clear(inv, keep)
+---@param moved? boolean the items were moved somewhere else (drop on the ground): they still exist
+function Inventory.Clear(inv, keep, moved)
 	inv = Inventory(inv) --[[@as OxInventory]]
 
 	if not inv or not next(inv.items) then return end
 
+	-- items of a player before clearing: the clothing slots are told which ones were removed
+	local before = inv.player and not moved and table.clone(inv.items)
 	local updateSlots = {}
 	local newWeight = 0
 	local inc = 0
@@ -2363,6 +2366,16 @@ function Inventory.Clear(inv, keep)
 	if server.syncInventory then server.syncInventory(inv) end
 
 	inv.weapon = nil
+
+	if before then
+		local removed = {}
+
+		for slot, item in pairs(before) do
+			if not inv.items[slot] then removed[#removed + 1] = item end
+		end
+
+		TriggerEvent('pure_inventory:itemsCleared', inv.id, removed)
+	end
 end
 
 exports('ClearInventory', Inventory.Clear)
