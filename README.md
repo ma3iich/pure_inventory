@@ -10,11 +10,11 @@
 <br>
 
 **Un inventaire à cases pour FiveM avec ton personnage en 3D, des cases de vêtements et un rendu réglable dans un seul fichier.**<br>
-Standalone, ou prêt à l'emploi avec QBCore. Fork d'`ox_inventory` : tous les scripts faits pour `ox_inventory` continuent de marcher.
+Standalone, ou prêt à l'emploi avec QBCore ou ESX. Fork d'`ox_inventory` : tous les scripts faits pour `ox_inventory` continuent de marcher.
 
 [![FiveM](https://img.shields.io/badge/FiveM-resource-F26722?logo=fivem&logoColor=white)](https://fivem.net)
 [![Lua](https://img.shields.io/badge/Lua-5.4-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
-[![Standalone](https://img.shields.io/badge/framework-standalone%20%7C%20QBCore-6e7681)](#-installation)
+[![Standalone](https://img.shields.io/badge/framework-standalone%20%7C%20QBCore%20%7C%20ESX-6e7681)](#-installation)
 [![Licence](https://img.shields.io/badge/licence-GPL--3.0-3fb950)](LICENSE)
 [![Téléchargements](https://img.shields.io/github/downloads/ma3iich/pure_inventory/total?label=T%C3%A9l%C3%A9chargements&color=2ea44f)](https://github.com/ma3iich/pure_inventory/releases)
 [![YouTube](https://img.shields.io/badge/YouTube-Tuto%20vid%C3%A9o-red?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=n8H1ayGNnV0)
@@ -78,7 +78,7 @@ Standalone, ou prêt à l'emploi avec QBCore. Fork d'`ox_inventory` : tous les s
     <td>🚶 <b>Reste ouvert</b><br><sub>Marche inventaire ouvert ; il reste ouvert quand tu manges, bois, te soignes, changes de vêtement, ou pendant une barre de chargement.</sub></td>
   </tr>
   <tr>
-    <td>🔌 <b>Standalone ou QBCore</b><br><sub>Détecte ton framework tout seul (QBCore, Qbox, ESX, ox_core, ND), ou fonctionne sans framework.</sub></td>
+    <td>🔌 <b>Standalone, QBCore ou ESX</b><br><sub>Détecte ton framework tout seul (QBCore, Qbox, ESX, ox_core, ND), ou fonctionne sans framework.</sub></td>
     <td>🔒 <b>Serveur renforcé</b><br><sub>Contrôles serveur en plus sur chaque déplacement, dépôt, don, fabrication, achat et action d'arme (voir <a href="#-différences-avec-ox_inventory">différences</a>).</sub></td>
   </tr>
   <tr>
@@ -114,6 +114,7 @@ Plus de 13 langues : English, Français, Deutsch, Español, Italiano, Português
    ensure oxmysql
    ensure ox_lib
    ensure qb-core          # si tu utilises QBCore
+   ensure es_extended      # si tu utilises ESX
    ensure pure_inventory
    ```
 4. Démarre le serveur : les tables se créent toutes seules ([fichiers SQL](sql/README.md) si tu préfères les lancer toi-même).
@@ -121,6 +122,8 @@ Plus de 13 langues : English, Français, Deutsch, Español, Italiano, Português
 
 **QBCore :** rien d'autre à faire. Au premier démarrage, les objets de QBCore sont recopiés dans `data/items.lua` (redémarre une fois, comme ox_inventory).
 `exports['qb-inventory']` (AddItem, RemoveItem, HasItem...) et les fonctions joueur de QBCore continuent de marcher.
+
+**ESX :** rien d'autre à faire non plus. ESX voit Pure Inventory comme ox_inventory tout seul, et au premier démarrage les objets de la table `items` sont recopiés dans `data/items.lua` (redémarre une fois). Testé avec ESX Legacy 1.16 et illenium-appearance (cases de vêtements, case Cintre, reconnexion).
 
 **Standalone :** les joueurs sont enregistrés par leur licence FiveM. Les métiers (police...) viennent des permissions ACE :
 ```cfg
@@ -274,11 +277,11 @@ Les sources de l'interface sont dans `web/src` (`cd web && npm install && npm ru
 <br>
 
 **A slot inventory for FiveM with your character in 3D, clothing slots and a look you set in one file.**<br>
-Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_inventory` script keeps working.
+Standalone, or plug & play with QBCore or ESX. Fork of `ox_inventory`, every `ox_inventory` script keeps working.
 
 [![FiveM](https://img.shields.io/badge/FiveM-resource-F26722?logo=fivem&logoColor=white)](https://fivem.net)
 [![Lua](https://img.shields.io/badge/Lua-5.4-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
-[![Standalone](https://img.shields.io/badge/framework-standalone%20%7C%20QBCore-6e7681)](#-installation-1)
+[![Standalone](https://img.shields.io/badge/framework-standalone%20%7C%20QBCore%20%7C%20ESX-6e7681)](#-installation-1)
 [![License](https://img.shields.io/badge/license-GPL--3.0-3fb950)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/ma3iich/pure_inventory/total?label=Downloads&color=2ea44f)](https://github.com/ma3iich/pure_inventory/releases)
 [![YouTube](https://img.shields.io/badge/YouTube-Video%20tutorial-red?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=n8H1ayGNnV0)
@@ -342,7 +345,7 @@ Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_invent
     <td>🚶 <b>Stays open</b><br><sub>Walk with the inventory open; it stays open when you eat, drink, heal, change clothes, or during a progress bar.</sub></td>
   </tr>
   <tr>
-    <td>🔌 <b>Standalone or QBCore</b><br><sub>Detects your framework by itself (QBCore, Qbox, ESX, ox_core, ND), or works without any framework.</sub></td>
+    <td>🔌 <b>Standalone, QBCore or ESX</b><br><sub>Detects your framework by itself (QBCore, Qbox, ESX, ox_core, ND), or works without any framework.</sub></td>
     <td>🔒 <b>Hardened server</b><br><sub>Extra server checks on every move, drop, give, craft, purchase and weapon action (see <a href="#-changes-from-ox_inventory">changes</a>).</sub></td>
   </tr>
   <tr>
@@ -378,6 +381,7 @@ Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_invent
    ensure oxmysql
    ensure ox_lib
    ensure qb-core          # if you use QBCore
+   ensure es_extended      # if you use ESX
    ensure pure_inventory
    ```
 4. Start the server: the tables are created by themselves ([SQL files](sql/README.md) if you prefer to run them).
@@ -385,6 +389,8 @@ Standalone, or plug & play with QBCore. Fork of `ox_inventory`, every `ox_invent
 
 **QBCore:** nothing else to do. On the first start, the QBCore items are copied into `data/items.lua` (restart once, like ox_inventory).
 `exports['qb-inventory']` (AddItem, RemoveItem, HasItem...) and the QBCore player functions keep working.
+
+**ESX:** nothing else to do either. ESX sees Pure Inventory as ox_inventory by itself, and on the first start the items of the `items` table are copied into `data/items.lua` (restart once). Tested with ESX Legacy 1.16 and illenium-appearance (clothing slots, hanger slot, reconnection).
 
 **Standalone:** players are saved by their FiveM license. Jobs (police...) come from ACE permissions:
 ```cfg
