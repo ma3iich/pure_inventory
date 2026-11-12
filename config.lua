@@ -186,6 +186,7 @@ Config.Clothing = {
 
     -- After the player is loaded, the removed clothes are applied again as soon as your appearance script
     -- dressed the character (checked every 250 ms, up to ApplyTimeout ms), after a first delay of ApplyDelay ms.
+    -- When it dresses him later (spawn selection, slow loading), they are applied at the next check (WatchInterval).
     ApplyDelay = 500,
     ApplyTimeout = 10000,
     WatchInterval = 2000,       -- ms between two checks that another script did not dress the character again

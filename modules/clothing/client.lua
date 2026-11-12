@@ -195,6 +195,9 @@ local function run(action)
         return notify('cannot_perform')
     end
 
+    -- slots still waiting for the appearance script are settled first (the server allows one action every 400 ms)
+    if Clothing.reconcile(false, true) then Wait(450) end
+
     busy = true
 
     local ok, err = pcall(action)
@@ -395,23 +398,39 @@ local function waitForBaseOutfit(state)
     until GetGameTimer() > deadline
 end
 
+-- Piece seen in each slot at the last check. A slot showing neither its base nor what the player chose waits while
+-- it keeps the same piece: after a connection the appearance script can dress the character late (spawn selection,
+-- slow loading). Once another piece shows up there, another script chose it.
+local seen = {}
+
+local function remember()
+    for key, slot in pairs(slots) do
+        local piece = read(slot)
+        seen[key] = { d = piece.d, t = piece.t }
+    end
+end
+
 ---@param fetch boolean? read the state from the server (connection, respawn); otherwise the local copy is used
-function Clothing.reconcile(fetch)
+---@param settle boolean? the player is about to change his clothes: a waiting slot is settled now
+---@return boolean? asked the server to take a piece off
+function Clothing.reconcile(fetch, settle)
     if not PlayerData.loaded or not supported() or busy then return end
 
     if fetch then
         local state = lib.callback.await('pure_inventory:clothing:getState', false)
         known = type(state) == 'table' and state or {}
+        remember()
         waitForBaseOutfit(known)
     end
 
-    local forget, changed = {}, fetch == true
+    local forget, changed, askedServer = {}, fetch == true, false
 
     for key, entry in pairs(known) do
         local slot = slots[key]
 
         if slot and type(entry) == 'table' then
             local now = read(slot)
+            local last = seen[key]
 
             local function matches(target)
                 if target == 'off' then return isNaked(slot, now) end
@@ -423,6 +442,8 @@ function Clothing.reconcile(fetch)
                     -- another script applied the saved outfit (or undressed): what the character changed is put back
                     apply(slot, entry.cur)
                     changed = true
+                elseif not settle and last and last.d == now.d and last.t == now.t then
+                    -- same piece as at the last check: the appearance script has not dressed the character yet
                 elseif type(entry.cur) == 'table' then
                     -- a piece put on from an item, replaced by another script (outfit changer...): it goes back
                     -- into the inventory, and that script decides for the slot from now on
@@ -430,6 +451,7 @@ function Clothing.reconcile(fetch)
                     if success then apply(slot, now) end
                     forget[#forget + 1] = key
                     changed = true
+                    askedServer = true
                 else
                     forget[#forget + 1] = key
                 end
@@ -437,12 +459,16 @@ function Clothing.reconcile(fetch)
         end
     end
 
+    remember()
+
     if #forget > 0 then
         for _, key in ipairs(forget) do known[key] = nil end
         TriggerServerEvent('pure_inventory:clothing:forget', forget)
     end
 
     if changed then Preview.refresh() end
+
+    return askedServer
 end
 
 local readyAt
